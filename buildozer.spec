@@ -22,7 +22,7 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,json,txt,.html
 # pyjnius = Android TTS API access
 # kivy = UI framework
 # plyer = audio playback support
-requirements = python3,kivy>=2.3.0,pyjnius,plyer
+requirements = python3,kivy==2.2.1,pyjnius,plyer
 
 # (str) Custom source folders for requirements
 # requirements.source.kivy = ../../kivy
