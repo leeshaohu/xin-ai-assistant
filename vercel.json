@@ -1,12 +1,13 @@
 {
   "functions": {
-    "api/tts_proxy.py": {
+    "api/index.py": {
+      "runtime": "python3.12",
       "memory": 256,
       "maxDuration": 30
     }
   },
-  "routes": [
-    { "src": "/api/tts_proxy", "dest": "/api/tts_proxy.py" },
-    { "src": "/", "dest": "/api/tts_proxy.py" }
+  "rewrites": [
+    { "source": "/api/tts_proxy", "destination": "/api/index" },
+    { "source": "/tts_proxy", "destination": "/api/index" }
   ]
 }
