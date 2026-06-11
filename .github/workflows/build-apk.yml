@@ -66,20 +66,36 @@ jobs:
 
       - name: Build APK
         run: |
+          set -eo pipefail
           export PATH=$HOME/.buildozer/android/platform/apache-ant-1.9.4/bin:$PATH
+          echo "=== disk space before build ===" && df -h .
+          echo "=== running buildozer ==="
           buildozer -v android debug 2>&1 | tee build.log
-        timeout-minutes: 60
+          echo "=== build exit code: $? ==="
+          echo "=== files in bin/: ==="
+          ls -la bin/ 2>/dev/null || echo "(bin/ does not exist)"
+        timeout-minutes: 90
 
-      - name: Upload build log (on failure)
-        if: failure()
+      - name: Upload build log (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
           retention-days: 7
 
+      - name: Verify APK exists
+        run: |
+          if ls bin/*.apk 2>/dev/null; then
+            echo "✅ APK found!"
+            ls -lh bin/*.apk
+          else
+            echo "❌ No APK in bin/ — searching everywhere..."
+            find . -name "*.apk" 2>/dev/null || echo "No APK found anywhere"
+            exit 1
+          fi
+
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: APK
