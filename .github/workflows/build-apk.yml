@@ -42,6 +42,7 @@ jobs:
             libsqlite3-dev libgdbm-dev libdb-dev \
             libexpat1-dev liblzma-dev tk-dev \
             libc6:i386 libstdc++6:i386 zlib1g:i386 \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
             ccache
 
       - name: Cache Buildozer directory
