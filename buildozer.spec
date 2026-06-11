@@ -3,6 +3,9 @@
 # (str) Title of your application
 title = 心语 AI 陪伴
 
+# (str) Package version
+version = 0.1
+
 # (str) Package name
 package.name = aiassistant
 
