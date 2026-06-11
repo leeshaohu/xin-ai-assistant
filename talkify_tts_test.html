@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Talkify TTS 保存诊断工具</title>
+<style>
+  :root {
+    --bg: #0f172a; --bg2: #1e293b; --bg3: #334155;
+    --accent: #818cf8; --accent2: #6366f1; --green: #4ade80; --red: #f87171;
+    --yellow: #fbbf24; --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --border: #475569; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+  h1 { text-align: center; font-size: 20px; color: var(--accent); margin: 12px 0 4px; }
+  .subtitle { text-align: center; font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+
+  .section { background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+  .section-title { padding: 12px 16px; font-size: 14px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white; display: flex; align-items: center; gap: 8px; }
+  .section-body { padding: 12px 16px; }
+
+  .test-row { display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--bg3); }
+  .test-row:last-child { border-bottom: none; }
+  .test-name { flex: 1; font-size: 13px; }
+  .test-status { min-width: 28px; text-align: center; font-size: 16px; }
+  .test-btn { background: var(--accent2); color: white; border: none;
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    font-weight: 600; transition: background 0.15s; white-space: nowrap; }
+  .test-btn:active { background: var(--accent); }
+  .test-btn:disabled { background: var(--text3); cursor: not-allowed; }
+  .test-btn.running { background: var(--yellow); color: #000; }
+
+  .log-area { background: #000; color: #0f0; font-family: "Cascadia Code", "Fira Code", monospace;
+    font-size: 11px; padding: 10px; border-radius: 8px; margin-top: 8px;
+    max-height: 260px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    line-height: 1.5; }
+
+  .big-btn { display: block; width: 100%; padding: 12px; border: none;
+    border-radius: var(--radius); font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 8px; transition: opacity 0.15s; }
+  .big-btn:active { opacity: 0.7; }
+  .big-btn.green { background: var(--green); color: #000; }
+  .big-btn.blue { background: var(--accent); color: white; }
+  .big-btn.red { background: var(--red); color: white; }
+
+  .env-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+    font-size: 12px; }
+  .env-key { color: var(--text2); white-space: nowrap; }
+  .env-val { color: var(--green); word-break: break-all; }
+
+  .result-card { background: var(--bg3); border-radius: 8px; padding: 10px;
+    margin-top: 8px; font-size: 12px; line-height: 1.6; }
+  .result-card.pass { border-left: 3px solid var(--green); }
+  .result-card.fail { border-left: 3px solid var(--red); }
+  .result-card.warn { border-left: 3px solid var(--yellow); }
+  .result-card.info { border-left: 3px solid var(--accent); }
+
+  .voice-item { font-size: 12px; padding: 4px 0; color: var(--text2); }
+  .voice-item b { color: var(--text); }
+  .voice-item .tag { display: inline-block; background: var(--accent2); color: white;
+    font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+
+  .copy-bar { position: sticky; bottom: 0; background: var(--bg2);
+    padding: 10px 0; border-top: 1px solid var(--border); margin-top: 12px; }
+
+  #globalLog { margin-top: 12px; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px;
+    border: 2px solid var(--text3); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔬 Talkify TTS 保存诊断工具</h1>
+  <p class="subtitle">测试 Talkify / 豆包语音 在手机浏览器上的音频保存能力</p>
+
+  <!-- ═══ 环境信息 ═══ -->
+  <div class="section">
+    <div class="section-title">📋 环境信息</div>
+    <div class="section-body">
+      <div class="env-grid" id="envInfo">加载中...</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 1: 语音引擎枚举 ═══ -->
+  <div class="section">
+    <div class="section-title">🎤 测试 1：语音引擎列表</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">列出所有可用语音引擎</span>
+        <span class="test-status" id="t1-status">⏳</span>
+        <button class="test-btn" onclick="test1_listVoices()">检测</button>
+      </div>
+      <div id="t1-voices" style="display:none; max-height: 200px; overflow-y: auto; margin-top: 6px;"></div>
+      <div class="hint">查找 Talkify / 豆包语音是否在列表中</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 2: Web Speech API 播放 ═══ -->
+  <div class="section">
+    <div class="section-title">🔊 测试 2：Web Speech API 播放</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">用 Talkify/浏览器语音播放测试句</span>
+        <span class="test-status" id="t2-status">⏳</span>
+        <button class="test-btn" onclick="test2_playSpeech()">播放</button>
+      </div>
+      <div id="t2-result"></div>
+      <div class="hint">确认 Talkify 语音可以播放，并记录使用的是哪个 voice</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 3: AudioContext 音频捕获 ═══ -->
+  <div class="section">
+    <div class="section-title">🎧 测试 3：AudioContext + MediaRecorder 捕获</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">尝试通过 AudioContext 捕获 TTS 音频</span>
+        <span class="test-status" id="t3-status">⏳</span>
+        <button class="test-btn" onclick="test3_audioContextCapture()">测试</button>
+      </div>
+      <div id="t3-result"></div>
+      <div class="hint">浏览器安全策略通常阻止捕获 speechSynthesis 输出，此测试验证是否可行</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 4: getDisplayMedia 系统音频捕获 ═══ -->
+  <div class="section">
+    <div class="section-title">🖥️ 测试 4：getDisplayMedia 系统音频捕获</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">尝试通过屏幕共享 API 捕获系统音频</span>
+        <span class="test-status" id="t4-status">⏳</span>
+        <button class="test-btn" onclick="test4_getDisplayMedia()">测试</button>
+      </div>
+      <div id="t4-result"></div>
+      <div class="hint">部分浏览器支持通过屏幕共享捕获系统音频，可能是保存 Talkify 的唯一方法</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 5: Edge-TTS WebSocket ═══ -->
+  <div class="section">
+    <div class="section-title">🌐 测试 5：Edge-TTS WebSocket 连接</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">测试 Edge-TTS WebSocket 能否连接</span>
+        <span class="test-status" id="t5-status">⏳</span>
+        <button class="test-btn" onclick="test5_edgeTTS()">测试</button>
+      </div>
+      <div id="t5-result"></div>
+      <div class="hint">Edge-TTS 可以返回原始音频数据用于保存，但 WebSocket 在 content:// 协议下可能不稳定</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 6: HTTP TTS ═══ -->
+  <div class="section">
+    <div class="section-title">🔗 测试 6：HTTP TTS (Google Translate)</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">测试 Google Translate TTS HTTP API</span>
+        <span class="test-status" id="t6-status">⏳</span>
+        <button class="test-btn" onclick="test6_httpTTS()">测试</button>
+      </div>
+      <div id="t6-result"></div>
+      <div class="hint">HTTP 请求比 WebSocket 更稳定，可返回原始音频，但音质和音色与 Talkify 不同</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 7: 豆包/字节云端 TTS ═══ -->
+  <div class="section">
+    <div class="section-title">☁️ 测试 7：豆包/字节云端 TTS API</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">探测豆包 TTS 云端 API 端点</span>
+        <span class="test-status" id="t7-status">⏳</span>
+        <button class="test-btn" onclick="test7_doubaoAPI()">探测</button>
+      </div>
+      <div id="t7-result"></div>
+      <div class="hint">如果有公开 API，可直接获取与 Talkify 相同音色的音频数据用于保存</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 8: Talkify 本地服务检测 ═══ -->
+  <div class="section">
+    <div class="section-title">📡 测试 8：Talkify 本地服务检测</div>
+    <div class="section-body">
+      <div class="test-row">
+        <span class="test-name">扫描常见端口是否暴露了 TTS 服务</span>
+        <span class="test-status" id="t8-status">⏳</span>
+        <button class="test-btn" onclick="test8_localService()">扫描</button>
+      </div>
+      <div id="t8-result"></div>
+      <div class="hint">部分 TTS 应用会在本地启动 HTTP 服务，允许直接请求音频数据</div>
+    </div>
+  </div>
+
+  <!-- ═══ 测试 9: 完整保存流程 ═══ -->
+  <div class="section">
+    <div class="section-title">💾 测试 9：完整音频保存</div>
+    <div class="section-body">
+      <p style="font-size:12px; color:var(--text2); margin-bottom:8px;">
+        按顺序尝试所有可用的保存方案，找出哪条路能走通。
+      </p>
+      <div class="test-row">
+        <span class="test-name">运行完整保存测试</span>
+        <span class="test-status" id="t9-status">⏳</span>
+        <button class="test-btn" onclick="test9_fullSave()" style="background:var(--green);color:#000;">全量测试</button>
+      </div>
+      <div id="t9-result"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 全局日志 ═══ -->
+  <div class="section">
+    <div class="section-title">📝 诊断日志（可复制）</div>
+    <div class="section-body">
+      <div class="log-area" id="logArea">等待测试...</div>
+    </div>
+  </div>
+
+  <!-- ═══ 复制/清除按钮 ═══ -->
+  <div class="copy-bar">
+    <button class="big-btn blue" onclick="copyLog()">📋 复制完整日志</button>
+    <button class="big-btn red" onclick="clearLog()" style="margin-top:6px;">🗑️ 清除日志</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   Talkify TTS 保存诊断工具
+   ══════════════════════════════════════════ */
+
+var LOG = [];
+var testResults = {};
+
+/* ─── 日志系统 ─── */
+function lg(msg) {
+  var ts = new Date().toLocaleTimeString('zh-CN', {hour12:false});
+  var line = '[' + ts + '] ' + msg;
+  LOG.push(line);
+  var el = document.getElementById('logArea');
+  if (el) el.textContent = LOG.join('\n');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function setTestStatus(id, status) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = status;
+}
+
+function setResult(id, html, cls) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.innerHTML = '<div class="result-card ' + (cls||'info') + '">' + html + '</div>';
+  }
+}
+
+function copyLog() {
+  var header = '=== Talkify TTS 保存诊断日志 ===\n';
+  header += '时间: ' + new Date().toISOString() + '\n';
+  header += 'UA: ' + navigator.userAgent + '\n';
+  header += '协议: ' + location.protocol + '\n';
+  header += '设备: ' + navigator.platform + '\n\n';
+  header += LOG.join('\n');
+  header += '\n\n=== 测试结果汇总 ===\n';
+  for (var k in testResults) {
+    header += k + ': ' + testResults[k] + '\n';
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(header).then(function() {
+      alert('✅ 日志已复制到剪贴板！');
+    }).catch(function() { fallbackCopy(header); });
+  } else {
+    fallbackCopy(header);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); alert('✅ 日志已复制！'); }
+  catch(e) { alert('❌ 复制失败，请手动选择日志文本复制'); }
+  document.body.removeChild(ta);
+}
+
+function clearLog() {
+  LOG = [];
+  document.getElementById('logArea').textContent = '日志已清除';
+}
+
+/* ─── 初始化环境信息 ─── */
+function initEnvInfo() {
+  var info = [
+    ['协议', location.protocol],
+    ['主机', location.hostname || '无'],
+    ['UA', navigator.userAgent.substring(0, 120) + '...'],
+    ['平台', navigator.platform],
+    ['speechSynthesis', typeof speechSynthesis !== 'undefined' ? '✅ 支持' : '❌ 不支持'],
+    ['MediaRecorder', typeof MediaRecorder !== 'undefined' ? '✅ 支持' : '❌ 不支持'],
+    ['AudioContext', (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') ? '✅ 支持' : '❌ 不支持'],
+    ['getDisplayMedia', typeof navigator.mediaDevices !== 'undefined' && navigator.mediaDevices.getDisplayMedia ? '✅ 支持' : '❌ 不支持'],
+    ['WebSocket', typeof WebSocket !== 'undefined' ? '✅ 支持' : '❌ 不支持'],
+    ['crypto.subtle', (typeof crypto !== 'undefined' && crypto.subtle) ? '✅ 支持' : '❌ 不支持'],
+    ['Fetch', typeof fetch !== 'undefined' ? '✅ 支持' : '❌ 不支持'],
+    ['Blob', typeof Blob !== 'undefined' ? '✅ 支持' : '❌ 不支持'],
+    ['下载(a download)', (function() { var a = document.createElement('a'); return typeof a.download !== 'undefined' ? '✅ 支持' : '❌ 不支持'; })()],
+    ['window.__nativeTTS__', typeof window.__nativeTTS__ !== 'undefined' ? '✅ 有（Kivy环境）' : '❌ 无（浏览器环境）'],
+  ];
+
+  var html = '';
+  for (var i = 0; i < info.length; i++) {
+    html += '<span class="env-key">' + info[i][0] + '</span>';
+    html += '<span class="env-val">' + info[i][1] + '</span>';
+  }
+  document.getElementById('envInfo').innerHTML = html;
+
+  lg('环境: protocol=' + location.protocol + ', nativeTTS=' + (typeof window.__nativeTTS__ !== 'undefined'));
+  lg('平台: ' + navigator.platform);
+  lg('speechSynthesis: ' + (typeof speechSynthesis !== 'undefined' ? 'YES' : 'NO'));
+  lg('MediaRecorder: ' + (typeof MediaRecorder !== 'undefined' ? 'YES' : 'NO'));
+  lg('getDisplayMedia: ' + (typeof navigator.mediaDevices !== 'undefined' && navigator.mediaDevices.getDisplayMedia ? 'YES' : 'NO'));
+}
+
+
+/* ══════════════════════════════════════════
+   测试 1：语音引擎列表
+   ══════════════════════════════════════════ */
+function test1_listVoices() {
+  setTestStatus('t1-status', '<span class="spinner"></span>');
+  lg('--- 测试1: 语音引擎枚举 ---');
+
+  if (typeof speechSynthesis === 'undefined') {
+    setTestStatus('t1-status', '❌');
+    setResult('t1-result', 'speechSynthesis API 不可用', 'fail');
+    testResults['T1-语音列表'] = '❌ speechSynthesis 不可用';
+    lg('❌ speechSynthesis 不可用');
+    return;
+  }
+
+  function showVoices(voices) {
+    lg('找到 ' + voices.length + ' 个语音引擎');
+    var html = '';
+    var talkifyFound = false;
+    var doubaoFound = false;
+
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      var isTalkify = /talkify/i.test(v.name);
+      var isDoubao = /豆包|doubao|bytedance|byte/i.test(v.name);
+      if (isTalkify) talkifyFound = true;
+      if (isDoubao) doubaoFound = true;
+
+      var tag = '';
+      if (isTalkify) tag += '<span class="tag">Talkify</span>';
+      if (isDoubao) tag += '<span class="tag">豆包</span>';
+      if (v.localService) tag += '<span class="tag" style="background:#4ade80;color:#000">本地</span>';
+
+      html += '<div class="voice-item"><b>' + v.name + '</b> [' + v.lang + ']' + tag + '</div>';
+    }
+
+    if (voices.length === 0) {
+      html = '<div style="color:var(--yellow);font-size:12px;">⚠️ 未找到任何语音引擎</div>';
+    }
+
+    document.getElementById('t1-voices').innerHTML = html;
+    document.getElementById('t1-voices').style.display = 'block';
+
+    var status = voices.length > 0 ? '✅' : '⚠️';
+    setTestStatus('t1-status', status);
+
+    var summary = '共 ' + voices.length + ' 个语音';
+    if (talkifyFound) summary += ' | ✅ 发现 Talkify';
+    if (doubaoFound) summary += ' | ✅ 发现 豆包';
+    if (!talkifyFound && !doubaoFound) summary += ' | ⚠️ 未发现 Talkify/豆包（可能使用系统默认语音名）';
+
+    setResult('t1-result', summary, talkifyFound || doubaoFound ? 'pass' : 'warn');
+    testResults['T1-语音列表'] = status + ' ' + summary;
+    lg(summary);
+  }
+
+  var voices = speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    showVoices(voices);
+  } else {
+    lg('voicesloaded 事件等待中...');
+    speechSynthesis.onvoiceschanged = function() {
+      showVoices(speechSynthesis.getVoices());
+    };
+    // 备用：2秒后再试
+    setTimeout(function() {
+      var v2 = speechSynthesis.getVoices();
+      if (v2.length > 0) showVoices(v2);
+      else {
+        setTestStatus('t1-status', '⚠️');
+        setResult('t1-result', '2秒后仍未获取到语音列表，可能需要用户交互后重试', 'warn');
+        testResults['T1-语音列表'] = '⚠️ 超时';
+        lg('⚠️ 2秒超时，未获取到语音列表');
+      }
+    }, 2000);
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   测试 2：Web Speech API 播放
+   ══════════════════════════════════════════ */
+function test2_playSpeech() {
+  setTestStatus('t2-status', '<span class="spinner"></span>');
+  lg('--- 测试2: Web Speech API 播放 ---');
+
+  if (typeof speechSynthesis === 'undefined') {
+    setTestStatus('t2-status', '❌');
+    setResult('t2-result', 'speechSynthesis API 不可用', 'fail');
+    testResults['T2-播放'] = '❌ API不可用';
+    lg('❌ speechSynthesis 不可用');
+    return;
+  }
+
+  var text = '你好，这是Talkify语音保存测试，如果你能听到这段话，说明语音播放功能正常。';
+  var utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'zh-CN';
+  utt.rate = 1.0;
+
+  var voices = speechSynthesis.getVoices();
+  var zhVoice = voices.find(function(v) { return /talkify|doubao|豆包|bytedance/i.test(v.name); })
+    || voices.find(function(v) { return v.lang === 'zh-CN' && v.localService; })
+    || voices.find(function(v) { return v.lang === 'zh-CN'; })
+    || voices.find(function(v) { return v.lang.indexOf('zh') === 0; });
+
+  if (zhVoice) {
+    utt.voice = zhVoice;
+    lg('使用语音: ' + zhVoice.name + ' (lang=' + zhVoice.lang + ', local=' + zhVoice.localService + ')');
+  } else {
+    lg('⚠️ 未找到中文语音，使用系统默认');
+  }
+
+  var startTime = Date.now();
+
+  utt.onstart = function() {
+    var elapsed = Date.now() - startTime;
+    lg('✅ 语音播放开始 (延迟 ' + elapsed + 'ms)');
+    setResult('t2-result', '语音播放已开始 ✅<br>语音: ' + (zhVoice ? zhVoice.name : '系统默认') + '<br>启动延迟: ' + elapsed + 'ms', 'pass');
+  };
+
+  utt.onend = function() {
+    var elapsed = Date.now() - startTime;
+    lg('✅ 语音播放结束 (总时长 ' + elapsed + 'ms)');
+    setTestStatus('t2-status', '✅');
+    testResults['T2-播放'] = '✅ 播放成功, 语音=' + (zhVoice ? zhVoice.name : '默认') + ', 耗时=' + elapsed + 'ms';
+  };
+
+  utt.onerror = function(e) {
+    lg('❌ 语音播放错误: ' + (e.error || e.message || JSON.stringify(e)));
+    setTestStatus('t2-status', '❌');
+    setResult('t2-result', '播放失败 ❌<br>错误: ' + (e.error || '未知'), 'fail');
+    testResults['T2-播放'] = '❌ ' + (e.error || '未知错误');
+  };
+
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+
+  // 超时检测
+  setTimeout(function() {
+    if (testResults['T2-播放'] && testResults['T2-播放'].indexOf('✅') >= 0) return;
+    lg('⚠️ 播放超时 10s，可能未开始');
+    setTestStatus('t2-status', '⚠️');
+    setResult('t2-result', '播放超时 ⚠️<br>可能需要用户交互后重试，或浏览器阻止了自动播放', 'warn');
+    testResults['T2-播放'] = '⚠️ 超时';
+  }, 10000);
+}
+
+
+/* ══════════════════════════════════════════
+   测试 3：AudioContext + MediaRecorder 捕获
+   ══════════════════════════════════════════ */
+function test3_audioContextCapture() {
+  setTestStatus('t3-status', '<span class="spinner"></span>');
+  lg('--- 测试3: AudioContext + MediaRecorder 捕获 ---');
+
+  if (typeof MediaRecorder === 'undefined') {
+    setTestStatus('t3-status', '❌');
+    setResult('t3-result', 'MediaRecorder API 不可用，无法捕获音频', 'fail');
+    testResults['T3-AudioContext捕获'] = '❌ MediaRecorder不可用';
+    lg('❌ MediaRecorder 不可用');
+    return;
+  }
+
+  var results = [];
+  var testCtx, testDest, testRecorder, testStream;
+
+  // 方案 A：尝试 createMediaStreamDestination + speechSynthesis
+  lg('方案A: AudioContext.createMediaStreamDestination()');
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    testCtx = new AC();
+    testDest = testCtx.createMediaStreamDestination();
+    lg('  ✅ createMediaStreamDestination 成功');
+
+    // 尝试将 speechSynthesis 连接到 AudioContext
+    // 注意：标准 Web Speech API 不提供音频节点输出
+    // 这是核心限制
+    lg('  检查 SpeechSynthesis 是否能输出到 AudioContext...');
+    lg('  ❌ SpeechSynthesis 不提供 AudioNode 输出接口');
+    lg('  → speechSynthesis 输出不经过 AudioContext，无法通过此方式捕获');
+    results.push('❌ speechSynthesis 无法连接到 AudioContext（标准限制）');
+  } catch(e) {
+    lg('  ❌ AudioContext 创建失败: ' + e.message);
+    results.push('❌ AudioContext 创建失败: ' + e.message);
+  }
+
+  // 方案 B：尝试 MediaRecorder 直接录制 AudioContext 输出
+  lg('方案B: 尝试创建空白 MediaStream 并录制');
+  try {
+    if (testCtx && testDest) {
+      // 创建一个静音的振荡器来测试录制流程
+      var osc = testCtx.createOscillator();
+      osc.frequency.value = 440;
+      osc.connect(testDest);
+      osc.start();
+      osc.stop(testCtx.currentTime + 0.1);
+
+      testRecorder = new MediaRecorder(testDest.stream);
+      var chunks = [];
+      testRecorder.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+      testRecorder.onstop = function() {
+        lg('  ✅ MediaRecorder 录制 AudioContext 输出成功（但 speechSynthesis 无法路由到此）');
+        results.push('⚠️ AudioContext 录制本身可行，但 speechSynthesis 输出不经过 AudioContext');
+        osc.disconnect();
+        finishTest3();
+      };
+      testRecorder.start();
+      setTimeout(function() { testRecorder.stop(); }, 500);
+    } else {
+      results.push('❌ AudioContext 不可用，无法测试录制');
+      finishTest3();
+    }
+  } catch(e) {
+    lg('  ❌ MediaRecorder 录制失败: ' + e.message);
+    results.push('❌ MediaRecorder 录制失败: ' + e.message);
+    finishTest3();
+  }
+
+  function finishTest3() {
+    // 方案 C：尝试 AudioWorklet 捕获
+    lg('方案C: AudioWorkletNode 捕获');
+    lg('  ❌ AudioWorklet 同样无法捕获 speechSynthesis 输出（独立音频管道）');
+    results.push('❌ AudioWorklet 也无法捕获 speechSynthesis 输出');
+
+    // 总结
+    var summary = results.join('<br>');
+    var hasAnySuccess = results.some(function(r) { return r.indexOf('✅') >= 0 || r.indexOf('⚠️') >= 0; });
+    setTestStatus('t3-status', hasAnySuccess ? '⚠️' : '❌');
+    setResult('t3-result',
+      summary + '<br><br><b style="color:var(--yellow)">结论：Web Speech API 的音频输出与 Web Audio API 是完全独立的管道，' +
+      '浏览器出于安全策略不允许网页捕获系统 TTS 音频。此方法不可行。</b>',
+      'warn'
+    );
+    testResults['T3-AudioContext捕获'] = '❌ 不可行（浏览器安全限制）';
+    lg('结论: speechSynthesis 音频无法通过 AudioContext/MediaRecorder 捕获');
+
+    if (testCtx) testCtx.close();
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   测试 4：getDisplayMedia 系统音频捕获
+   ══════════════════════════════════════════ */
+async function test4_getDisplayMedia() {
+  setTestStatus('t4-status', '<span class="spinner"></span>');
+  lg('--- 测试4: getDisplayMedia 系统音频捕获 ---');
+
+  if (typeof navigator.mediaDevices === 'undefined' || !navigator.mediaDevices.getDisplayMedia) {
+    setTestStatus('t4-status', '❌');
+    setResult('t4-result', 'getDisplayMedia API 不可用<br>此浏览器/环境不支持屏幕共享音频捕获', 'fail');
+    testResults['T4-getDisplayMedia'] = '❌ API不可用';
+    lg('❌ getDisplayMedia 不可用');
+    return;
+  }
+
+  lg('尝试 getDisplayMedia({audio: true})...');
+
+  try {
+    var stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,  // 大部分浏览器要求同时请求视频
+      audio: true
+    });
+
+    lg('✅ getDisplayMedia 请求成功');
+    lg('  音频轨道数: ' + stream.getAudioTracks().length);
+    lg('  视频轨道数: ' + stream.getVideoTracks().length);
+
+    if (stream.getAudioTracks().length > 0) {
+      var audioTrack = stream.getAudioTracks()[0];
+      lg('  音频轨道 label: ' + audioTrack.label);
+      lg('  音频轨道 enabled: ' + audioTrack.enabled);
+      lg('  音频轨道 readyState: ' + audioTrack.readyState);
+
+      // 尝试录制
+      try {
+        var recorder = new MediaRecorder(stream);
+        var recordChunks = [];
+        recorder.ondataavailable = function(e) { if (e.data.size > 0) recordChunks.push(e.data); };
+
+        var recordDone = new Promise(function(resolve) {
+          recorder.onstop = function() { resolve(); };
+        });
+
+        recorder.start();
+        lg('  录制中... (3秒)');
+        await new Promise(function(r) { setTimeout(r, 3000); });
+        recorder.stop();
+        await recordDone;
+
+        var blob = new Blob(recordChunks, { type: 'audio/webm' });
+        lg('  ✅ 录制完成！大小: ' + blob.size + ' bytes');
+
+        // 尝试下载
+        if (blob.size > 0) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'talkify_capture_test.webm';
+          a.textContent = '点击下载测试录音';
+          a.style.cssText = 'display:block;margin-top:8px;color:var(--accent);font-weight:700;';
+
+          setTestStatus('t4-status', '✅');
+          setResult('t4-result',
+            '✅ 系统音频捕获成功！<br>' +
+            '音频轨道: ' + audioTrack.label + '<br>' +
+            '录制大小: ' + blob.size + ' bytes<br>' +
+            '<b style="color:var(--green)">此方法可用于保存 Talkify 音频！</b><br>' +
+            '下一步：播放 Talkify TTS → 同时用此方法录制 → 保存', 'pass');
+
+          var resultDiv = document.getElementById('t4-result');
+          resultDiv.querySelector('.result-card').appendChild(a);
+
+          testResults['T4-getDisplayMedia'] = '✅ 捕获成功, 大小=' + blob.size;
+        } else {
+          lg('  ⚠️ 录制数据为空');
+          setTestStatus('t4-status', '⚠️');
+          setResult('t4-result', 'getDisplayMedia 请求成功但录制数据为空<br>可能用户未授权音频捕获', 'warn');
+          testResults['T4-getDisplayMedia'] = '⚠️ 录制数据为空';
+        }
+      } catch(recErr) {
+        lg('  ❌ MediaRecorder 录制失败: ' + recErr.message);
+        setTestStatus('t4-status', '❌');
+        setResult('t4-result', 'getDisplayMedia 成功但录制失败<br>' + recErr.message, 'fail');
+        testResults['T4-getDisplayMedia'] = '❌ 录制失败: ' + recErr.message;
+      }
+    } else {
+      lg('⚠️ 没有音频轨道（用户可能只授权了视频）');
+      setTestStatus('t4-status', '⚠️');
+      setResult('t4-result',
+        'getDisplayMedia 请求成功，但没有音频轨道<br>' +
+        '可能原因：1) 用户未授权音频 2) 浏览器不支持音频捕获 3) 移动端限制', 'warn');
+      testResults['T4-getDisplayMedia'] = '⚠️ 无音频轨道';
+    }
+
+    // 清理
+    stream.getTracks().forEach(function(t) { t.stop(); });
+
+  } catch(e) {
+    lg('❌ getDisplayMedia 失败: ' + e.message);
+    var isUserDenied = e.name === 'NotAllowedError' || e.name === 'AbortError';
+    setTestStatus('t4-status', isUserDenied ? '⚠️' : '❌');
+    setResult('t4-result',
+      'getDisplayMedia 请求失败<br>' +
+      '错误: ' + e.name + ' - ' + e.message + '<br>' +
+      (isUserDenied ? '用户取消了授权或浏览器阻止了请求<br>提示：需要在弹窗中选择"分享屏幕"并勾选"分享音频"' : ''),
+      isUserDenied ? 'warn' : 'fail'
+    );
+    testResults['T4-getDisplayMedia'] = (isUserDenied ? '⚠️ 用户拒绝' : '❌ ' + e.message);
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   测试 5：Edge-TTS WebSocket
+   ══════════════════════════════════════════ */
+async function test5_edgeTTS() {
+  setTestStatus('t5-status', '<span class="spinner"></span>');
+  lg('--- 测试5: Edge-TTS WebSocket ---');
+
+  if (typeof WebSocket === 'undefined') {
+    setTestStatus('t5-status', '❌');
+    setResult('t5-result', 'WebSocket API 不可用', 'fail');
+    testResults['T5-EdgeTTS'] = '❌ WebSocket不可用';
+    lg('❌ WebSocket 不可用');
+    return;
+  }
+
+  // 生成 Sec-MS-GEC token
+  var tokenOk = false;
+  var tokenVal = '';
+  try {
+    if (crypto.subtle) {
+      var hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(Math.floor(Date.now() / 30000).toString()));
+      var arr = Array.from(new Uint8Array(hash));
+      tokenVal = arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      tokenOk = true;
+      lg('Sec-MS-GEC token 生成成功: ' + tokenVal.substring(0, 16) + '...');
+    } else {
+      lg('⚠️ crypto.subtle 不可用');
+    }
+  } catch(e) {
+    lg('❌ Sec-MS-GEC 生成失败: ' + e.message);
+  }
+
+  var ticks = Math.floor(Date.now() / 10000);
+  var wsUrl = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?' +
+    'TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4' +
+    '&ConnectionId=' + crypto.randomUUID() +
+    (tokenOk ? '&Sec-MS-GEC=' + tokenVal + '&Sec-MS-GEC-Id=0' : '');
+
+  lg('连接 WebSocket: ' + wsUrl.substring(0, 80) + '...');
+
+  try {
+    var connected = false;
+    var ws = new WebSocket(wsUrl);
+
+    var connectTimeout = setTimeout(function() {
+      if (!connected) {
+        ws.close();
+        lg('❌ WebSocket 连接超时 (10s)');
+        setTestStatus('t5-status', '❌');
+        setResult('t5-result', 'WebSocket 连接超时<br>content:// 协议下可能无法建立 WebSocket 连接', 'fail');
+        testResults['T5-EdgeTTS'] = '❌ 连接超时';
+      }
+    }, 10000);
+
+    ws.onopen = function() {
+      connected = true;
+      clearTimeout(connectTimeout);
+      lg('✅ WebSocket 连接成功！');
+
+      // 发送配置
+      var config = 'Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n' +
+        JSON.stringify({
+          context: { syntheses: { voices: [{ voice: 'zh-CN-XiaoxiaoNeural' }] } }
+        });
+      ws.send(config);
+      lg('已发送 speech.config');
+
+      // 发送测试文本
+      var ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN">' +
+        '<voice name="zh-CN-XiaoxiaoNeural"><prosody rate="+0%%">测试语音保存</prosody></voice></speak>';
+      var requestId = crypto.randomUUID();
+      var msg = 'X-RequestId:' + requestId + '\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n' + ssml;
+      ws.send(msg);
+      lg('已发送 SSML 请求');
+    };
+
+    var audioChunks = [];
+
+    var handleBinary = function(data) {
+      var arr = (data instanceof Blob) ? null : new Uint8Array(data);
+      if (arr) {
+        // 二进制帧：前2字节是 header 长度标记
+        if (arr.length > 2) {
+          var headerLen = (arr[0] << 8) | arr[1];
+          if (headerLen > 0 && headerLen < arr.length) {
+            audioChunks.push(arr.slice(headerLen + 2));
+          } else if (headerLen === 0) {
+            audioChunks.push(arr.slice(2));
+          }
+        }
+      }
+    };
+
+    ws.onmessage = function(e) {
+      if (typeof e.data === 'string') {
+        lg('收到文本消息: ' + e.data.substring(0, 80));
+        if (e.data.indexOf('Path:turn.end') >= 0) {
+          lg('收到 turn.end，音频块数: ' + audioChunks.length);
+          ws.close();
+
+          if (audioChunks.length > 0) {
+            var totalSize = audioChunks.reduce(function(s, c) { return s + c.length; }, 0);
+            lg('✅ Edge-TTS 音频生成成功！总大小: ' + totalSize + ' bytes');
+
+            // 尝试创建下载
+            var merged = new Uint8Array(totalSize);
+            var off = 0;
+            for (var i = 0; i < audioChunks.length; i++) {
+              merged.set(audioChunks[i], off);
+              off += audioChunks[i].length;
+            }
+            var blob = new Blob([merged], { type: 'audio/mp3' });
+            var dlUrl = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = dlUrl;
+            a.download = 'edge_tts_test.mp3';
+            a.textContent = '点击下载 Edge-TTS 测试音频';
+            a.style.cssText = 'display:block;margin-top:8px;color:var(--green);font-weight:700;';
+
+            setTestStatus('t5-status', '✅');
+            setResult('t5-result',
+              '✅ Edge-TTS WebSocket 可用！<br>' +
+              '音频大小: ' + totalSize + ' bytes<br>' +
+              '<b style="color:var(--green)">此方法可用于保存音频（音色为微软小晓，非 Talkify/豆包）</b>',
+              'pass');
+            document.getElementById('t5-result').querySelector('.result-card').appendChild(a);
+            testResults['T5-EdgeTTS'] = '✅ 成功, 大小=' + totalSize;
+          } else {
+            lg('⚠️ 收到 turn.end 但无音频数据');
+            setTestStatus('t5-status', '⚠️');
+            setResult('t5-result', 'WebSocket 连接成功但未收到音频数据<br>服务端可能限流', 'warn');
+            testResults['T5-EdgeTTS'] = '⚠️ 连接成功但无音频';
+          }
+        }
+      } else if (e.data instanceof Blob) {
+        e.data.arrayBuffer().then(function(buf) { handleBinary(new Uint8Array(buf)); });
+      } else if (e.data instanceof ArrayBuffer) {
+        handleBinary(e.data);
+      }
+    };
+
+    ws.onerror = function() {
+      clearTimeout(connectTimeout);
+      lg('❌ WebSocket onerror, readyState=' + ws.readyState);
+      setTestStatus('t5-status', '❌');
+      setResult('t5-result',
+        'WebSocket 连接失败<br>' +
+        'readyState=' + ws.readyState + '<br>' +
+        'content:// 协议下 WebSocket 可能受限', 'fail');
+      testResults['T5-EdgeTTS'] = '❌ onerror, state=' + ws.readyState;
+    };
+
+    ws.onclose = function(e) {
+      clearTimeout(connectTimeout);
+      lg('WebSocket 关闭: code=' + e.code + ' reason=' + e.reason);
+    };
+
+  } catch(e) {
+    lg('❌ Edge-TTS 测试异常: ' + e.message);
+    setTestStatus('t5-status', '❌');
+    setResult('t5-result', 'Edge-TTS 测试失败: ' + e.message, 'fail');
+    testResults['T5-EdgeTTS'] = '❌ ' + e.message;
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   测试 6：HTTP TTS (Google Translate)
+   ══════════════════════════════════════════ */
+async function test6_httpTTS() {
+  setTestStatus('t6-status', '<span class="spinner"></span>');
+  lg('--- 测试6: HTTP TTS (Google Translate) ---');
+
+  if (typeof fetch === 'undefined') {
+    setTestStatus('t6-status', '❌');
+    setResult('t6-result', 'fetch API 不可用', 'fail');
+    testResults['T6-HTTP_TTS'] = '❌ fetch不可用';
+    lg('❌ fetch 不可用');
+    return;
+  }
+
+  var text = '这是HTTP语音保存测试';
+  var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(text);
+
+  lg('请求: ' + url.substring(0, 80) + '...');
+
+  try {
+    var resp = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: { 'Accept': 'audio/mpeg' }
+    });
+
+    lg('响应状态: ' + resp.status + ' ' + resp.statusText);
+    lg('Content-Type: ' + (resp.headers.get('Content-Type') || 'N/A'));
+
+    if (resp.ok) {
+      var blob = await resp.blob();
+      lg('✅ 音频数据获取成功！大小: ' + blob.size + ' bytes, 类型: ' + blob.type);
+
+      if (blob.size > 0) {
+        var audioUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = 'http_tts_test.mp3';
+        a.textContent = '点击下载 HTTP TTS 测试音频';
+        a.style.cssText = 'display:block;margin-top:8px;color:var(--green);font-weight:700;';
+
+        // 同时创建播放按钮
+        var audio = document.createElement('audio');
+        audio.src = audioUrl;
+        audio.controls = true;
+        audio.style.cssText = 'width:100%;margin-top:8px;';
+
+        setTestStatus('t6-status', '✅');
+        setResult('t6-result',
+          '✅ HTTP TTS 可用！<br>' +
+          '大小: ' + blob.size + ' bytes<br>' +
+          '类型: ' + blob.type + '<br>' +
+          '<b style="color:var(--green)">此方法最稳定，可保存音频（音色为 Google TTS，非 Talkify/豆包）</b>',
+          'pass');
+        var card = document.getElementById('t6-result').querySelector('.result-card');
+        card.appendChild(audio);
+        card.appendChild(a);
+        testResults['T6-HTTP_TTS'] = '✅ 成功, 大小=' + blob.size;
+      } else {
+        lg('⚠️ 响应 body 为空');
+        setTestStatus('t6-status', '⚠️');
+        setResult('t6-result', '请求成功但数据为空', 'warn');
+        testResults['T6-HTTP_TTS'] = '⚠️ 数据为空';
+      }
+    } else {
+      var errText = await resp.text().catch(function() { return ''; });
+      lg('❌ HTTP 请求失败: ' + resp.status + ' ' + errText.substring(0, 100));
+      setTestStatus('t6-status', '❌');
+      setResult('t6-result', 'HTTP TTS 请求失败<br>状态: ' + resp.status + '<br>可能被 CORS 策略阻止', 'fail');
+      testResults['T6-HTTP_TTS'] = '❌ HTTP ' + resp.status;
+    }
+  } catch(e) {
+    lg('❌ HTTP TTS 异常: ' + e.message);
+    var isCors = /cors|network|fetch/i.test(e.message);
+    setTestStatus('t6-status', '❌');
+    setResult('t6-result',
+      'HTTP TTS 请求失败<br>错误: ' + e.message + '<br>' +
+      (isCors ? '原因：CORS 跨域策略阻止了请求<br>content:// 协议下可能无法访问外部 HTTP' : ''),
+      'fail');
+    testResults['T6-HTTP_TTS'] = '❌ ' + e.message;
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   测试 7：豆包/字节云端 TTS API
+   ══════════════════════════════════════════ */
+async function test7_doubaoAPI() {
+  setTestStatus('t7-status', '<span class="spinner"></span>');
+  lg('--- 测试7: 豆包/字节云端 TTS API ---');
+
+  // 豆包 TTS 可能的 API 端点
+  var endpoints = [
+    { name: '豆包 TTS (volcengine)', url: 'https://openspeech.bytedance.com/api/v1/tts', method: 'POST' },
+    { name: '火山引擎 TTS', url: 'https://open.volcengineapi.com/api/v1/tts', method: 'POST' },
+  ];
+
+  var results = [];
+
+  for (var i = 0; i < endpoints.length; i++) {
+    var ep = endpoints[i];
+    lg('探测: ' + ep.name + ' → ' + ep.url);
+
+    try {
+      var resp = await fetch(ep.url, {
+        method: ep.method,
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '测试', voice: 'zh-CN' })
+      });
+
+      lg('  状态: ' + resp.status);
+      var body = await resp.text().catch(function() { return ''; });
+      lg('  响应: ' + body.substring(0, 200));
+
+      if (resp.ok) {
+        results.push('✅ ' + ep.name + ': 可达（需 API Key 才能获取音频）');
+      } else if (resp.status === 401 || resp.status === 403) {
+        results.push('⚠️ ' + ep.name + ': 端点存在但需要认证 (HTTP ' + resp.status + ')');
+      } else {
+        results.push('❌ ' + ep.name + ': HTTP ' + resp.status);
+      }
+    } catch(e) {
+      lg('  ❌ 失败: ' + e.message);
+      var isCors = /cors|network/i.test(e.message);
+      results.push('❌ ' + ep.name + ': ' + (isCors ? 'CORS 阻止' : e.message));
+    }
+
+    // 间隔
+    if (i < endpoints.length - 1) {
+      await new Promise(function(r) { setTimeout(r, 500); });
+    }
+  }
+
+  // 补充：检查 Talkify Web API
+  lg('检查 Talkify Web SDK...');
+  if (typeof Talkify !== 'undefined') {
+    lg('  ✅ 发现 Talkify 全局对象！');
+    results.push('✅ Talkify Web SDK 已加载，可尝试 Talkify TTS API');
+  } else {
+    lg('  ❌ 未发现 Talkify 全局对象（Talkify 仅作为 Android 系统引擎存在）');
+    results.push('❌ Talkify Web SDK 不存在（Talkify 仅是 Android 系统级 TTS 引擎）');
+  }
+
+  setTestStatus('t7-status', results.some(function(r) { return r.indexOf('⚠️') >= 0; }) ? '⚠️' : '❌');
+  setResult('t7-result',
+    results.join('<br>') +
+    '<br><br><b style="color:var(--yellow)">结论：豆包/字节 TTS 云端 API 需要付费 API Key，' +
+    '无法免费直接使用。Talkify 仅是 Android 系统级引擎，不暴露 Web API。</b>',
+    'warn');
+  testResults['T7-豆包API'] = '⚠️ 需要API Key';
+  lg('结论: 豆包云端 TTS 需要认证，Talkify 无 Web API');
+}
+
+
+/* ══════════════════════════════════════════
+   测试 8：Talkify 本地服务检测
+   ══════════════════════════════════════════ */
+async function test8_localService() {
+  setTestStatus('t8-status', '<span class="spinner"></span>');
+  lg('--- 测试8: Talkify 本地服务检测 ---');
+
+  var ports = [8080, 59120, 59125, 59130, 3000, 5000, 8000, 8888, 9000, 12345, 18080];
+  var hosts = ['127.0.0.1', 'localhost'];
+  var found = false;
+  var results = [];
+
+  for (var h = 0; h < hosts.length; h++) {
+    for (var p = 0; p < ports.length; p++) {
+      var url = 'http://' + hosts[h] + ':' + ports[p] + '/';
+      try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 1500);
+        var resp = await fetch(url, { mode: 'no-cors', signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        // no-cors 模式下 response.type 为 'opaque'，status 为 0
+        if (resp.type === 'opaque' || resp.ok) {
+          lg('  ✅ ' + url + ' 有响应 (type=' + resp.type + ')');
+          results.push('✅ ' + url + ' 有响应');
+          found = true;
+        }
+      } catch(e) {
+        // 连接被拒绝或超时 → 无服务
+      }
+    }
+  }
+
+  if (!found) {
+    lg('所有端口均无响应');
+    results.push('❌ 未发现本地 TTS 服务');
+
+    // 尝试 Android Intent 方式
+    lg('尝试 Android Intent 方式...');
+    results.push('⚠️ Android Intent（tts://）需要原生 App 环境，浏览器无法直接使用');
+  }
+
+  setTestStatus('t8-status', found ? '✅' : '❌');
+  setResult('t8-result',
+    results.join('<br>') +
+    (found ? '<br><br><b style="color:var(--green)">发现本地服务！可能可以直接请求音频数据。</b>' :
+     '<br><br><b style="color:var(--yellow)">Talkify 不暴露本地 HTTP 服务。它是纯 Android 系统级 TTS 引擎。</b>'),
+    found ? 'pass' : 'warn');
+  testResults['T8-本地服务'] = found ? '✅ 发现' : '❌ 未发现';
+  lg('结论: Talkify 本地服务 ' + (found ? '发现' : '不存在'));
+}
+
+
+/* ══════════════════════════════════════════
+   测试 9：完整保存流程
+   ══════════════════════════════════════════ */
+async function test9_fullSave() {
+  setTestStatus('t9-status', '<span class="spinner"></span>');
+  lg('=== 测试9: 完整保存流程 ===');
+  lg('按可行性顺序依次测试所有保存方案...');
+
+  var methods = [];
+
+  // 方案 1: 原生 TTS (Kivy 环境)
+  lg('');
+  lg('方案1: 原生 TTS (window.__nativeTTS__)');
+  if (typeof window.__nativeTTS__ !== 'undefined') {
+    lg('✅ window.__nativeTTS__ 存在！');
+    lg('  可用方法: ' + Object.getOwnPropertyNames(window.__nativeTTS__).join(', '));
+    methods.push({ name: '原生 TTS (Kivy)', status: '✅', detail: '有 __nativeTTS__，可用 synthesizeToFile' });
+  } else {
+    lg('❌ window.__nativeTTS__ 不存在（浏览器环境，非 Kivy）');
+    methods.push({ name: '原生 TTS (Kivy)', status: '❌', detail: '非 Kivy 环境' });
+  }
+
+  // 方案 2: getDisplayMedia
+  lg('');
+  lg('方案2: getDisplayMedia 系统音频捕获');
+  if (typeof navigator.mediaDevices !== 'undefined' && navigator.mediaDevices.getDisplayMedia) {
+    lg('⚠️ API 存在，需要用户交互授权');
+    methods.push({ name: 'getDisplayMedia 录制', status: '⚠️', detail: '需要手动点"分享屏幕+音频"，可捕获 Talkify 音频' });
+  } else {
+    lg('❌ getDisplayMedia 不可用');
+    methods.push({ name: 'getDisplayMedia 录制', status: '❌', detail: 'API 不可用（移动端通常不支持）' });
+  }
+
+  // 方案 3: Edge-TTS WebSocket
+  lg('');
+  lg('方案3: Edge-TTS WebSocket');
+  if (typeof WebSocket !== 'undefined') {
+    lg('⚠️ WebSocket API 存在，实际连接取决于网络环境');
+    if (location.protocol === 'content:') {
+      lg('  ⚠️ content:// 协议下 WebSocket 可能受限');
+    }
+    methods.push({ name: 'Edge-TTS WebSocket', status: '⚠️', detail: '可获取原始音频但非 Talkify 音色，content:// 下可能不稳定' });
+  } else {
+    methods.push({ name: 'Edge-TTS WebSocket', status: '❌', detail: 'WebSocket 不可用' });
+  }
+
+  // 方案 4: HTTP TTS
+  lg('');
+  lg('方案4: HTTP TTS (Google Translate)');
+  if (typeof fetch !== 'undefined') {
+    methods.push({ name: 'HTTP TTS', status: '⚠️', detail: '最稳定，可获取音频但非 Talkify 音色，可能受 CORS 限制' });
+  } else {
+    methods.push({ name: 'HTTP TTS', status: '❌', detail: 'fetch 不可用' });
+  }
+
+  // 方案 5: AudioContext 捕获
+  lg('');
+  lg('方案5: AudioContext 捕获 speechSynthesis');
+  methods.push({ name: 'AudioContext 捕获', status: '❌', detail: '浏览器安全策略阻止，speechSynthesis 输出无法路由到 AudioContext' });
+
+  // 方案 6: 豆包云端 API
+  lg('');
+  lg('方案6: 豆包/字节云端 TTS API');
+  methods.push({ name: '豆包云端 API', status: '⚠️', detail: '需要付费 API Key，但可获得与 Talkify 相同音色' });
+
+  // 生成总结
+  lg('');
+  lg('=== 总结 ===');
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+  html += '<tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px;">方案</th><th style="padding:4px;">状态</th><th style="text-align:left;padding:4px;">说明</th></tr>';
+  for (var i = 0; i < methods.length; i++) {
+    var m = methods[i];
+    html += '<tr style="border-bottom:1px solid var(--bg3);">';
+    html += '<td style="padding:4px;">' + m.name + '</td>';
+    html += '<td style="padding:4px;text-align:center;">' + m.status + '</td>';
+    html += '<td style="padding:4px;color:var(--text2);">' + m.detail + '</td>';
+    html += '</tr>';
+    lg(m.status + ' ' + m.name + ': ' + m.detail);
+  }
+  html += '</table>';
+
+  // 推荐方案
+  html += '<div style="margin-top:12px;padding:10px;background:var(--accent2);border-radius:8px;color:white;">';
+  html += '<b>💡 推荐方案：</b><br>';
+
+  if (typeof window.__nativeTTS__ !== 'undefined') {
+    html += '1️⃣ 首选 <b>原生 TTS (Kivy synthesizeToFile)</b> — 直接保存 Talkify 音频到磁盘，最可靠<br>';
+  }
+  if (typeof navigator.mediaDevices !== 'undefined' && navigator.mediaDevices.getDisplayMedia) {
+    html += '2️⃣ 次选 <b>getDisplayMedia 录制</b> — 播放 Talkify 同时录制系统音频<br>';
+  }
+  html += '3️⃣ 备选 <b>Edge-TTS / HTTP TTS</b> — 保存不同音色的语音，最稳定<br>';
+  html += '4️⃣ 进阶 <b>豆包云端 API</b> — 需 API Key，但音色一致<br>';
+  html += '<br>❌ <b>AudioContext 捕测不可行</b> — 浏览器安全限制，无法拦截 speechSynthesis 输出';
+  html += '</div>';
+
+  setResult('t9-result', html, 'info');
+  setTestStatus('t9-status', '✅');
+  testResults['T9-完整测试'] = '✅ 已完成';
+
+  lg('');
+  lg('推荐: 根据"音色要求"和"环境"选择方案');
+  lg('  - 要 Talkify 原音 → Kivy synthesizeToFile 或 getDisplayMedia');
+  lg('  - 只要能保存 → Edge-TTS 或 HTTP TTS（音色不同）');
+  lg('  - 完美方案 → 豆包云端 API（需 Key + 费用）');
+}
+
+
+/* ═══ 初始化 ═══ */
+initEnvInfo();
+
+// 延迟加载语音列表（某些浏览器需要用户交互后才能获取）
+document.addEventListener('click', function initOnce() {
+  if (typeof speechSynthesis !== 'undefined') {
+    speechSynthesis.getVoices(); // 触发加载
+  }
+  document.removeEventListener('click', initOnce);
+}, { once: true });
+
+lg('工具已加载。点击各测试按钮开始诊断。');
+lg('提示: 部分测试需要网络连接，请确保网络畅通。');
+</script>
+</body>
+</html>

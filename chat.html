@@ -1,0 +1,4129 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="心语">
+<meta name="theme-color" content="#1a1a2e">
+<title>心语 · AI 心理陪伴助手</title>
+<style>
+  :root {
+    --bg: #F5F0EB;
+    --bg2: #EDE8F5;
+    --bg3: #E4DDF0;
+    --accent: #7C6AB5;
+    --accent2: #A78BFA;
+    --accent3: #C4B5FD;
+    --text: #2C2C3A;
+    --text2: #7A7A8A;
+    --text3: #A0A0B0;
+    --bubble-me: #7C6AB5;
+    --bubble-ai: #FFFFFF;
+    --input-bg: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --card-border: #E0D8F0;
+    --drawer-bg: #FFFFFF;
+    --danger: #E94E63;
+    --success: #4ADE80;
+    --warn: #E9A23B;
+    --shadow: rgba(0,0,0,0.08);
+    --overlay-bg: rgba(0,0,0,0.45);
+  }
+  [data-theme="dark"] {
+    --bg: #12122A;
+    --bg2: #181838;
+    --bg3: #1E1E42;
+    --accent: #A78BFA;
+    --accent2: #C4B5FD;
+    --accent3: #DDD6FE;
+    --text: #E0DCE8;
+    --text2: #8A8A9A;
+    --text3: #5A5A6A;
+    --bubble-me: #6C5AA5;
+    --bubble-ai: #1E1E3A;
+    --input-bg: #1E1E3A;
+    --card-bg: #1E1E3A;
+    --card-border: #2E2E52;
+    --drawer-bg: #181838;
+    --shadow: rgba(0,0,0,0.25);
+    --overlay-bg: rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+    touch-action: manipulation;
+    transition: background 0.3s, color 0.3s;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100%; height: 100dvh;
+    max-width: 480px; margin: 0 auto;
+    position: relative;
+    background: var(--bg2);
+    box-shadow: 0 0 40px var(--shadow);
+    transition: background 0.3s;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; flex-shrink: 0;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.25); display: flex;
+    align-items: center; justify-content: center; font-size: 18px;
+  }
+  .header-title { font-size: 16px; font-weight: 700; }
+  .header-subtitle { font-size: 11px; opacity: 0.8; }
+  .header-btns { display: flex; gap: 6px; }
+  .hb { background: rgba(255,255,255,0.2); border: none; color: white;
+    width: 34px; height: 34px; border-radius: 10px; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .hb:active { background: rgba(255,255,255,0.35); }
+  .hb { position: relative; }
+  .hb-badge {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 16px; height: 16px; border-radius: 8px;
+    background: var(--danger); color: white; font-size: 10px;
+    font-weight: 700; display: none; align-items: center; justify-content: center;
+    padding: 0 4px; line-height: 1;
+  }
+  .hb-badge.visible { display: flex; }
+  .chat-area {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px 12px;
+    display: flex; flex-direction: column; gap: 14px;
+    scroll-behavior: smooth;
+  }
+  .bubble-wrap { display: flex; gap: 8px; max-width: 88%; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes fadeOut { from { opacity:1; transform: scale(1); } to { opacity:0; transform: scale(0.9); } }
+  .bubble-wrap.ai { align-self: flex-start; }
+  .bubble-wrap.me { align-self: flex-end; flex-direction: row-reverse; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; margin-top: 2px;
+  }
+  .avatar.ai { background: var(--accent); color: white; }
+  .avatar.me { background: var(--accent2); color: white; }
+  .bubble-wrap.me .avatar { background: var(--bubble-me); }
+  .bubble {
+    padding: 10px 14px; border-radius: 16px;
+    line-height: 1.7; font-size: 14.5px;
+    word-break: break-word; white-space: pre-wrap;
+  }
+  .bubble.ai {
+    background: var(--bubble-ai);
+    border: 1px solid rgba(124,106,181,0.12);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px var(--shadow);
+    transition: background 0.3s;
+  }
+  .bubble.me {
+    background: var(--bubble-me); color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble .cursor {
+    display: inline-block; width: 2px; height: 15px;
+    background: var(--accent); animation: blink 0.7s infinite;
+    vertical-align: text-bottom; margin-left: 1px; border-radius: 1px;
+  }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+  .bubble-time {
+    font-size: 10px; color: var(--text3); margin-top: 4px;
+    padding-left: 2px; opacity: 0.7;
+  }
+  .bubble-actions {
+    display: flex; gap: 2px; margin-top: 5px; padding-left: 2px;
+  }
+  .bubble-actions button {
+    background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 12px; padding: 3px 6px;
+    border-radius: 6px; line-height: 1; transition: all 0.15s;
+  }
+  .bubble-actions button:active { background: rgba(0,0,0,0.06); }
+  .bubble-actions button.speaking { color: var(--danger); }
+  .bubble-actions button.del-btn:active { background: rgba(233,78,99,0.1); color: var(--danger); }
+  .bubble-actions button.edit-btn:active { background: rgba(124,106,181,0.1); color: var(--accent); }
+  .bubble-actions button.speak-btn.playing {
+    color: var(--danger);
+    animation: pulse-tts 1s ease-in-out infinite;
+  }
+  @keyframes pulse-tts {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+  .bubble.editing { padding: 6px 8px; }
+  .bubble.editing textarea {
+    width: 100%; min-height: 48px; max-height: 200px;
+    border: 1px solid var(--accent); border-radius: 10px;
+    padding: 8px 10px; font-size: 14px; font-family: inherit;
+    line-height: 1.6; resize: vertical; outline: none;
+    color: var(--text); background: var(--card-bg);
+  }
+  .bubble.editing .edit-actions {
+    display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end;
+  }
+  .bubble.editing .edit-actions button {
+    border: none; border-radius: 8px; padding: 5px 14px;
+    font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600;
+  }
+  .bubble.editing .edit-actions .e-confirm { background: var(--accent); color: white; }
+  .bubble.editing .edit-actions .e-cancel { background: var(--bg3); color: var(--text2); }
+  .turn-counter {
+    text-align: center; font-size: 11px; color: var(--text2);
+    padding: 4px 0; opacity: 0.7;
+  }
+  .input-area {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: var(--bg2); flex-shrink: 0;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    transition: background 0.3s;
+  }
+  .input-wrap { flex: 1; position: relative; display: flex; align-items: flex-end; }
+  .input-area textarea {
+    width: 100%; background: var(--input-bg);
+    border: 1.5px solid rgba(124,106,181,0.2);
+    border-radius: 20px; padding: 10px 44px 10px 16px;
+    color: var(--text); font-size: 14.5px;
+    resize: none; outline: none; min-height: 40px; max-height: 100px;
+    line-height: 1.4; font-family: inherit;
+    transition: border-color 0.2s, background 0.3s;
+  }
+  .input-area textarea:focus { border-color: var(--accent); }
+  .input-area textarea::placeholder { color: var(--text3); }
+  .mic-btn {
+    position: absolute; right: 6px; bottom: 5px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: transparent; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text2);
+  }
+  .mic-btn:active { background: rgba(124,106,181,0.1); }
+  .mic-btn.recording { color: var(--danger); animation: pulse-mic 1s infinite; }
+  @keyframes pulse-mic { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+  .send-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: none; background: var(--accent); color: white;
+    font-size: 16px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .send-btn:disabled { opacity: 0.4; }
+  .send-btn:active { transform: scale(0.92); }
+  .stop-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--danger); background: transparent;
+    color: var(--danger); font-size: 14px; cursor: pointer; flex-shrink: 0;
+    display: none; align-items: center; justify-content: center;
+    animation: pulse-stop 1.5s ease-in-out infinite;
+  }
+  .stop-btn.visible { display: flex; }
+  @keyframes pulse-stop {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(233,78,99,0.3); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(233,78,99,0); }
+  }
+  .overlay {
+    position: fixed; inset: 0; background: var(--overlay-bg);
+    z-index: 100; display: none; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .overlay.open { display: block; opacity: 1; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(340px, 85vw); background: var(--drawer-bg);
+    z-index: 200; transform: translateX(100%);
+    transition: transform 0.25s ease;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; border-bottom: 1px solid var(--card-border); flex-shrink: 0;
+  }
+  .drawer-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .drawer-close { background: none; border: none; font-size: 20px; color: var(--text2); cursor: pointer; }
+  .drawer-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+  .section-title {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    margin: 16px 0 8px;
+  }
+  .section-title:first-child { margin-top: 0; }
+  .set-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .set-row-label { font-size: 14px; color: var(--text); }
+  .set-row input, .set-row textarea {
+    width: 100%; border: 1px solid var(--card-border); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none;
+    background: var(--card-bg); color: var(--text);
+  }
+  .set-row textarea { min-height: 60px; resize: vertical; }
+  .toggle {
+    width: 48px; height: 28px; border-radius: 14px;
+    background: #ddd; position: relative; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: white; transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle.on::after { transform: translateX(20px); }
+  .btn-outline {
+    width: 100%; padding: 10px; border: 1.5px solid var(--accent);
+    border-radius: 12px; background: var(--card-bg); color: var(--accent);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-outline:active { background: rgba(124,106,181,0.05); }
+  .btn-full {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    background: var(--accent); color: white; font-size: 14px;
+    font-weight: 700; cursor: pointer;
+  }
+  .btn-full:active { opacity: 0.8; }
+  .btn-danger {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    background: var(--card-bg); color: var(--danger); font-size: 13px;
+    font-weight: 600; cursor: pointer; border: 1px solid var(--danger);
+  }
+  .btn-danger:active { background: rgba(233,78,99,0.05); }
+  .model-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .model-btn {
+    padding: 6px 12px; border: 1.5px solid var(--card-border);
+    border-radius: 8px; background: var(--card-bg); font-size: 12px;
+    cursor: pointer; color: var(--text2); font-weight: 500;
+    transition: all 0.15s;
+  }
+  .model-btn.active { border-color: var(--accent); background: rgba(124,106,181,0.08); color: var(--accent); }
+  .model-btn:active { background: rgba(124,106,181,0.04); }
+  .tts-mode-grid { display: flex; gap: 6px; }
+  .tts-mode-btn {
+    flex: 1; padding: 8px 10px; border: 1.5px solid var(--card-border);
+    border-radius: 8px; background: var(--card-bg); font-size: 12px;
+    cursor: pointer; color: var(--text2);
+    transition: all 0.15s;
+  }
+  .tts-mode-btn.active { border-color: var(--accent); background: rgba(124,106,181,0.08); color: var(--accent); }
+  .welcome-msg {
+    text-align: center; padding: 30px 20px 10px; color: var(--text2);
+    font-size: 14px; line-height: 2;
+  }
+  .welcome-msg .emoji { font-size: 40px; display: block; margin-bottom: 12px; }
+  .suggestions {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    padding: 12px 16px 20px;
+  }
+  .suggest-chip {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 18px; padding: 8px 14px; font-size: 12.5px;
+    color: var(--text2); cursor: pointer; transition: all 0.15s;
+    white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .suggest-chip:active {
+    background: rgba(124,106,181,0.08); border-color: var(--accent); color: var(--accent);
+    transform: scale(0.97);
+  }
+  .memory-summary {
+    background: rgba(124,106,181,0.06); border: 1px solid rgba(124,106,181,0.15);
+    border-radius: 12px; padding: 12px; margin-bottom: 10px;
+    font-size: 13px; line-height: 1.7; color: var(--text);
+  }
+  .memory-summary-edit {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; line-height: 1.7; color: var(--text);
+    resize: vertical; min-height: 100px;
+    font-family: inherit;
+    outline: none;
+  }
+  .memory-summary-edit:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 2px rgba(124,106,181,0.15);
+  }
+  .summary-edit-btns {
+    display: flex; gap: 8px; margin-top: 8px;
+  }
+  .summary-edit-btns button {
+    flex: 1; padding: 6px 0; border-radius: 8px; border: none;
+    font-size: 12px; cursor: pointer; font-weight: 600;
+  }
+  .btn-save-summary { background: var(--accent); color: #fff; }
+  .btn-cancel-summary { background: var(--bg2); color: var(--text2); border: 1px solid var(--card-border) !important; }
+  .memory-item {
+    border-left: 2px solid var(--accent2); padding: 6px 10px;
+    margin-bottom: 8px; background: var(--bg2); border-radius: 0 8px 8px 0;
+  }
+  .memory-item-title { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .memory-item-body { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .section-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 12px;
+  }
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: rgba(44,44,58,0.88); color: white;
+    padding: 10px 20px; border-radius: 22px;
+    font-size: 13px; z-index: 500;
+    backdrop-filter: blur(8px);
+    animation: toastSlide 2.5s ease forwards;
+    pointer-events: none; white-space: nowrap;
+  }
+  @keyframes toastSlide {
+    0% { opacity:0; transform: translateX(-50%) translateY(12px); }
+    12% { opacity:1; transform: translateX(-50%) translateY(0); }
+    80% { opacity:1; }
+    100% { opacity:0; transform: translateX(-50%) translateY(-8px); }
+  }
+  .recording-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 300; display: none; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .recording-overlay.active { display: flex; }
+  .rec-wave { font-size: 48px; animation: pulse-mic 1s infinite; }
+  .rec-text { color: white; font-size: 16px; margin-top: 12px; }
+  .rec-stop {
+    margin-top: 20px; padding: 10px 24px; border-radius: 20px;
+    border: 2px solid white; background: rgba(255,255,255,0.15);
+    color: white; font-size: 14px; cursor: pointer;
+  }
+  .voice-select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--card-border);
+    border-radius: 8px; font-size: 13px; background: var(--card-bg);
+    color: var(--text); outline: none; font-family: inherit;
+  }
+  .reasoning-block {
+    margin-bottom: 8px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--bg3);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .reasoning-block summary {
+    cursor: pointer;
+    padding: 6px 10px;
+    font-weight: 600;
+    user-select: none;
+  }
+  .reasoning-block[open] summary {
+    border-bottom: 1px solid var(--card-border);
+  }
+  .reasoning-content {
+    margin: 0;
+    padding: 8px 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text2);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* ═══ Markdown 渲染样式 ═══ */
+  .md-body { line-height: 1.7; }
+  .md-body p { margin: 0 0 6px; }
+  .md-body p:last-child { margin-bottom: 0; }
+  .md-body strong { font-weight: 700; color: var(--accent); }
+  .md-body em { font-style: italic; }
+  .md-body .md-h2 { font-size: 15px; font-weight: 700; margin: 10px 0 4px; color: var(--text); }
+  .md-body .md-h3 { font-size: 14px; font-weight: 700; margin: 8px 0 3px; color: var(--text); }
+  .md-body ul.md-ul, .md-body ol.md-ol {
+    margin: 4px 0 6px 18px; padding: 0;
+  }
+  .md-body ul.md-ul { list-style-type: disc; }
+  .md-body ol.md-ol { list-style-type: decimal; }
+  .md-body ul.md-ul li, .md-body ol.md-ol li {
+    margin-bottom: 2px; line-height: 1.6;
+  }
+  .md-body pre.md-pre {
+    background: var(--bg3); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 10px 12px; margin: 6px 0;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.5;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  .md-body code.md-code {
+    background: var(--bg3); border: 1px solid var(--card-border);
+    border-radius: 4px; padding: 1px 5px; font-size: 12.5px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    color: var(--accent);
+  }
+  .md-body pre.md-pre code { background: none; border: none; padding: 0; color: inherit; }
+  .md-body blockquote.md-bq {
+    border-left: 3px solid var(--accent2); margin: 6px 0;
+    padding: 4px 10px; color: var(--text2); font-style: italic;
+    background: rgba(124,106,181,0.04); border-radius: 0 6px 6px 0;
+  }
+  .md-body hr.md-hr { border: none; border-top: 1px solid var(--card-border); margin: 10px 0; }
+  .md-body a.md-a { color: var(--accent); text-decoration: underline; }
+
+  /* ═══ 滚动到底部按钮 ═══ */
+  .scroll-bottom {
+    position: absolute; bottom: 70px; right: 16px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    box-shadow: 0 2px 8px var(--shadow); font-size: 16px;
+    cursor: pointer; display: none; align-items: center; justify-content: center;
+    z-index: 10; transition: opacity 0.2s;
+    color: var(--text2);
+  }
+  .scroll-bottom.visible { display: flex; }
+
+  /* ═══ 设置页输入框统一 ═══ */
+  .setting-input {
+    width: 100%; border: 1px solid var(--card-border); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none;
+    background: var(--card-bg); color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .setting-input:focus { border-color: var(--accent); }
+  .setting-textarea {
+    width: 100%; border: 1px solid var(--card-border); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none;
+    min-height: 60px; resize: vertical;
+    background: var(--card-bg); color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .setting-textarea:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-avatar">🧠</div>
+      <div>
+        <div class="header-title">心语 AI</div>
+        <div class="header-subtitle" id="modelLabel">deepseek-v4-flash</div>
+      </div>
+    </div>
+    <div class="header-btns">
+      <button class="hb" onclick="toggleDarkMode()" title="深色模式" id="darkBtn">🌙</button>
+      <button class="hb" onclick="openMemory()" title="记忆">🧠</button>
+      <button class="hb" onclick="openPersona()" title="角色">🎭</button>
+      <button class="hb" onclick="openExport()" title="导出对话">📤</button>
+      <button class="hb" onclick="openSettings()" title="设置">⚙️<span class="hb-badge" id="errorBadge"></span></button>
+    </div>
+  </div>
+
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="chat-area" id="chatArea">
+      <div class="welcome-msg" id="welcomeMsg">
+        <span class="emoji">💜</span>
+        我是心语，你的 AI 心理陪伴伙伴 🌸<br>
+        <span style="font-size:12px;">你可以随时分享心情，我会倾听和陪伴</span>
+      </div>
+      <div class="suggestions" id="suggestions">
+        <div class="suggest-chip" onclick="useSuggestion('今天心情不太好，想聊聊')">😔 心情不好想聊聊</div>
+        <div class="suggest-chip" onclick="useSuggestion('帮我做一个呼吸放松练习')">🧘 呼吸放松练习</div>
+        <div class="suggest-chip" onclick="useSuggestion('我最近压力很大，怎么办')">😰 缓解压力</div>
+        <div class="suggest-chip" onclick="useSuggestion('推荐一些改善睡眠的方法')">😴 改善睡眠</div>
+      </div>
+    </div>
+    <button class="scroll-bottom" id="scrollBottomBtn" onclick="scrollToBottom()">⬇</button>
+  </div>
+
+  <div class="turn-counter" id="turnCounter"></div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea id="userInput" rows="1" placeholder="说说你的心情..."
+        oninput="autoResize(this)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+      <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="语音输入">🎤</button>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" title="停止生成">■</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDrawersOnOverlay(event)"></div>
+
+<div class="recording-overlay" id="recordingOverlay">
+  <div class="rec-wave">🎤</div>
+  <div class="rec-text" id="recText">正在聆听...</div>
+  <button class="rec-stop" onclick="stopRecording()">停止录音</button>
+</div>
+
+<!-- ═ 导出抽屉 ═ -->
+<div class="drawer" id="exportDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">📤 导出对话</div>
+    <button class="drawer-close" onclick="closeExport()">✕</button>
+  </div>
+  <div class="drawer-scroll">
+    <div class="section-card" style="margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">
+        共 <span id="exportCount">0</span> 条消息 · <span id="exportTurns">0</span> 轮对话
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text);">
+        <input type="checkbox" id="exportWithReasoning" checked> 包含思考过程
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text);">
+        <input type="checkbox" id="exportWithSummary" checked> 包含记忆摘要
+      </label>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="doExport('txt')" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">
+        📄 导出为 TXT 文本
+      </button>
+      <button onclick="doExport('md')" style="background:#5a8a5a;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">
+        📝 导出为 Markdown
+      </button>
+      <button onclick="doExport('html')" style="background:#5a7aaa;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">
+        🌐 导出为 HTML（带样式）
+      </button>
+    </div>
+    <div id="exportMsg" style="margin-top:12px;font-size:13px;color:var(--text2);text-align:center;min-height:20px;"></div>
+  </div>
+</div>
+
+<!-- ═ 设置抽屉 ═ -->
+<div class="drawer" id="settingsDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">⚙️ 设置</div>
+    <button class="drawer-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="drawer-scroll">
+    <div class="section-title">🔑 API 配置</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input type="text" id="setApiUrl" class="setting-input" placeholder="API 地址">
+      <input type="text" id="setApiKey" class="setting-input" placeholder="API Key">
+    </div>
+
+    <div class="section-title">🤖 模型选择</div>
+    <div class="model-grid">
+      <button class="model-btn" data-model="deepseek-v4-flash" onclick="selectModel(this)">DeepSeek V4 Flash</button>
+      <button class="model-btn" data-model="deepseek-v4-pro" onclick="selectModel(this)">DeepSeek V4 Pro 🧠</button>
+    </div>
+
+    <div class="section-title">🔊 TTS 设置</div>
+    <div class="tts-mode-grid">
+      <button class="tts-mode-btn" data-tts="browser" onclick="selectTTSMode(this)">🔊 浏览器 TTS（Talkify）</button>
+      <button class="tts-mode-btn" data-tts="edge" onclick="selectTTSMode(this)">🔊 Edge-TTS（微软）</button>
+    </div>
+    <div style="margin-top:8px;">
+      <select class="voice-select" id="setEdgeVoice">
+        <option value="zh-CN-XiaoxiaoNeural">微软晓晓（女）</option>
+        <option value="zh-CN-YunxiNeural">微软云希（男）</option>
+        <option value="zh-CN-XiaoyiNeural">微软晓伊（女）</option>
+      </select>
+    </div>
+
+    <!-- ★ 火山引擎豆包 TTS 2.0（语音保存专用） -->
+    <div class="section-title" style="margin-top:10px;">🫘 豆包语音保存（火山引擎 API v3）</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">配置后「保存语音」将生成与 Talkify 相同的豆包声音（WAV格式）</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <input type="password" id="setVolcApiKey" class="setting-input" placeholder="API Key（必填，在火山引擎控制台→语音技术→获取API Key）" style="font-size:12px;">
+      <input type="text" id="setVolcProxyUrl" class="setting-input" placeholder="代理URL（必填！见下方说明）" style="font-size:12px;">
+      <div style="font-size:10px;color:var(--text3);line-height:1.4;">
+        ⚠️ 浏览器无法直接请求火山引擎（CORS限制），必须通过代理。<br>
+        部署 tts-proxy-worker.js 到 Cloudflare Workers 后填入地址<br>
+        （如 https://xinyu-tts.xxx.workers.dev）
+      </div>
+      <select class="voice-select" id="setVolcVoice">
+        <!-- ★ 音色 ID 完全对齐 Talkify APK 的 volcengine_seed_tts2_voices.xml -->
+        <option value="zh_female_vv_uranus_bigtts">👧 Vivi 2.0（通用·推荐）</option>
+        <option value="zh_female_xiaohe_uranus_bigtts">🌸 小何 2.0（温柔女声）</option>
+        <option value="zh_female_sophie_uranus_bigtts">💃 魅力苏菲 2.0</option>
+        <option value="zh_female_tianmeixiaoyuan_uranus_bigtts">🍬 甜美小源 2.0</option>
+        <option value="zh_female_shuangkuaisisi_uranus_bigtts">⚡ 爽快思思 2.0</option>
+        <option value="zh_male_m191_uranus_bigtts">🚢 云舟 2.0（沉稳男声）</option>
+        <option value="zh_male_taocheng_uranus_bigtts">🎙️ 小天 2.0</option>
+        <option value="zh_male_liufei_uranus_bigtts">📻 刘飞 2.0</option>
+        <option value="zh_female_qingxinnvsheng_uranus_bigtts">🍃 清新女声 2.0</option>
+        <option value="zh_female_cancan_uranus_bigtts">📚 知性灿灿 2.0</option>
+        <option value="zh_female_wenroumama_uranus_bigtts">👩\u200D👧 温柔妈妈 2.0</option>
+        <option value="zh_male_sunwukong_uranus_bigtts">🐵 猴哥 2.0（趣味）</option>
+        <option value="zh_female_kefunvsheng_uranus_bigtts">☀️ 暖阳女声 2.0（客服）</option>
+        <option value="zh_female_sajiaoxuemei_uranus_bigtts">😊 撒娇学妹 2.0</option>
+        <option value="zh_male_shaonianzixin_uranus_bigtts">🧢 少年梓辛 2.0</option>
+        <option value="zh_female_gaolengyujie_uranus_bigtts">❄️ 高冷御姐 2.0</option>
+        <option value="zh_female_wenroushunv_uranus_bigtts">🌸 温柔淑女 2.0</option>
+        <option value="zh_male_wennuanahu_uranus_bigtts">🧸 温暖阿虎 2.0</option>
+        <option value="zh_female_tiexinnvsheng_uranus_bigtts">💝 贴心女声/Candy 2.0</option>
+        <option value="zh_male_cixingjieshuonan_uranus_bigtts">🎤 磁性解说男声/Morgan 2.0</option>
+      </select>
+    </div>
+    <div class="set-row">
+      <div class="set-row-label">🔊 自动朗读回复</div>
+      <div class="toggle on" id="ttsAutoToggle" onclick="toggleTTSAuto()"></div>
+    </div>
+    <div class="set-row">
+      <div class="set-row-label">📝 朗读包含思考过程</div>
+      <div class="toggle" id="ttsReadReasoningToggle" onclick="toggleTTSReadReasoning()"></div>
+    </div>
+    <div class="set-row">
+      <div class="set-row-label">💾 自动保存语音文件</div>
+      <div class="toggle" id="ttsRetainToggle" onclick="toggleTTSRetain()"></div>
+    </div>
+    <div id="retainPathRow" style="display:none;margin-top:4px;">
+      <input type="text" id="setRetainPath" class="setting-input" placeholder="保存路径（如 /sdcard/心语语音/）" style="font-size:12px;">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn-outline" style="flex:1;" onclick="testTTS()">🔊 测试 TTS</button>
+      <button class="btn-outline" style="flex:1;" onclick="testEdgeTTSConnection()">🔗 测试 Edge-TTS</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn-outline" style="flex:1;" onclick="testHTTPTTSConnection()">🌐 测试 HTTP TTS</button>
+      <button class="btn-outline" style="flex:1;" onclick="testTTSSave()">💾 测试语音保存</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn-outline" style="flex:1; background:rgba(255,120,50,0.1);border-color:rgba(255,120,50,0.3);" onclick="testVolcTTS()" id="testVolcBtn">🫘 测试豆包语音保存</button>
+    </div>
+    <button class="btn-outline" style="margin-top:8px;" onclick="openErrorLog()" id="errorLogBtn">📋 错误日志（复制给开发者）</button>
+
+    <div class="section-title">🎭 角色与背景</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <textarea id="setSystem" class="setting-textarea" placeholder="系统提示词"></textarea>
+      <textarea id="setBackground" class="setting-textarea" placeholder="用户背景信息（可选）" style="min-height:40px;"></textarea>
+    </div>
+
+    <button class="btn-full" style="margin:12px 0;" onclick="saveSettings()">💾 保存设置</button>
+    <button class="btn-outline" onclick="clearChat()">🗑️ 清空对话</button>
+    <button class="btn-danger" style="margin-top:8px;" onclick="resetAll()">⚠️ 重置所有数据</button>
+  </div>
+</div>
+
+<!-- ═ 记忆抽屉 ═ -->
+<div class="drawer" id="memoryDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">🧠 对话记忆</div>
+    <button class="drawer-close" onclick="closeMemory()">✕</button>
+  </div>
+  <div class="drawer-scroll" id="memoryContent">
+    <div style="text-align:center;color:var(--text2);font-size:13px;padding:30px 0;">
+      暂无记忆<br><span style="font-size:11px;">开始对话后，这里会显示摘要和统计</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═ 角色抽屉 ═ -->
+<div class="drawer" id="personaDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">🎭 角色设定</div>
+    <button class="drawer-close" onclick="closePersona()">✕</button>
+  </div>
+  <div class="drawer-scroll">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">系统提示词</div>
+    <textarea id="personaSystem" class="setting-textarea" style="min-height:100px;"></textarea>
+    <div style="font-size:13px;color:var(--text2);margin:12px 0 8px;">用户背景</div>
+    <textarea id="personaBg" class="setting-textarea" style="min-height:60px;"></textarea>
+    <button class="btn-full" style="margin-top:6px;" onclick="savePersona()">💾 保存设定</button>
+  </div>
+</div>
+
+<!-- ═ 错误日志抽屉 ═ -->
+<div class="drawer" id="errorLogDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">📋 错误日志</div>
+    <button class="drawer-close" onclick="closeErrorLogDrawer()">✕</button>
+  </div>
+  <div class="drawer-scroll">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn-outline" style="flex:2;" onclick="copyErrorLog()">📋 复制日志</button>
+      <button class="btn-danger" style="flex:1;padding:10px 8px;" onclick="clearErrorLog()">🗑️ 清空</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">复制后粘贴给开发者即可，包含完整诊断信息</div>
+    <pre id="errorLogContent" style="background:var(--bg);border:1px solid var(--card-border);border-radius:10px;padding:12px;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:60vh;overflow-y:auto;color:var(--text);font-family:monospace;user-select:text;-webkit-user-select:text;">暂无错误日志</pre>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   心语 AI 陪伴 — 完整前端逻辑
+   ═══════════════════════════════════════════════════════ */
+
+const DEFAULTS = {
+  apiUrl: 'https://api.deepseek.com/v1/chat/completions',
+  system: '你是「心语」，一位温暖、共情的 AI 心理陪伴助手。你善于倾听，用温柔的语气回应。你的目标是让用户感到被理解和接纳。你可以提供情绪支持、认知重构、放松引导等帮助。请用中文回复，回复简短有温度（2-6句话为宜）。',
+  edgeVoice: 'zh-CN-XiaoxiaoNeural',
+};
+
+// ── 全局状态 ──
+let S = {};
+let history = [];
+let summary = '';
+let turnCount = 0;
+let isSending = false;
+let isSpeaking = false;
+let speechSynth = null;
+let hasNativeTTS = false;
+let recognition = null;
+let isRecording = false;
+let abortController = null;  // 用于停止生成
+
+// ── TTS 状态 ──
+let ttsQueue = [];
+let ttsUtterance = null;
+let ttsActiveSpeakBtn = null;
+const NATIVE_TTS_MAX_CHARS = 150;
+let edgeTTSRemainingChunks = [];
+let edgeTTSAudio = null;
+let edgeTTSWs = null;
+let nativeTTSWatchdog = null;
+
+// ── 留存语音（按 hidx 存储 Audio 对象）──
+let retainedAudios = {};
+
+// ── 快捷建议列表 ──
+const QUICK_SUGGESTIONS = [
+  '今天心情不太好，想聊聊',
+  '帮我做一个呼吸放松练习',
+  '我最近压力很大，怎么办',
+  '推荐一些改善睡眠的方法',
+  '如何与焦虑共处',
+  '想了解一下正念冥想',
+];
+
+/* ═══════════════════════════════════════════
+   环境检测（APK vs 桌面浏览器）
+   ═══════════════════════════════════════════ */
+
+function isContentProtocol() {
+  return location.protocol === 'content:';
+}
+
+// ── 根据聊天内容生成音频文件名 ──
+function generateAudioFileName(text, ext) {
+  // 取前 30 个非空白字符作为文件名基础
+  var raw = (text || '').trim().substring(0, 30);
+  // 清理非法文件名字符（Windows + Linux 通用）
+  var cleaned = raw
+    .replace(/[\\/:*?"<>|\x00-\x1F]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  // 限制长度
+  if (cleaned.length > 40) cleaned = cleaned.substring(0, 40);
+  return (cleaned || '语音') + (ext || '.wav');
+}
+
+/**
+ * APK 环境能力矩阵：
+ *   APK WebView (content://): 有原生桥 __nativeTTS__ → save-tts:// 最可靠
+ *   Android 浏览器打开本地文件: 无原生桥 → 回退 Edge-TTS WebSocket / HTTP TTS
+ *   桌面浏览器 (file:// / https://): 所有 Web API 正常可用
+ */
+
+/* ═══════════════════════════════════════════
+   初始化
+   ═══════════════════════════════════════════ */
+
+window.__onTTSEnd = function() {
+  clearTimeout(nativeTTSWatchdog);
+  if (isSpeaking && ttsQueue.length > 0) {
+    playNextNativeChunk();
+  } else {
+    finishPlaying();
+  }
+};
+
+function init() {
+  // 加载设置
+  var stored = localStorage.getItem('xinyu_settings');
+  if (stored) { try { Object.assign(S, JSON.parse(stored)); } catch(e) {} }
+  S.apiUrl = S.apiUrl || DEFAULTS.apiUrl;
+  S.apiKey = S.apiKey || '';
+  S.model = S.model || 'deepseek-v4-flash';
+  S.system = S.system || DEFAULTS.system;
+  S.background = S.background || '';
+  S.ttsAuto = S.ttsAuto !== undefined ? S.ttsAuto : true;
+  S.ttsMode = S.ttsMode || 'browser';
+  S.edgeVoice = S.edgeVoice || DEFAULTS.edgeVoice;
+  S.darkMode = S.darkMode || false;
+  S.ttsReadReasoning = S.ttsReadReasoning || false;
+  S.ttsRetain = S.ttsRetain || false;
+  S.retainPath = S.retainPath || '';
+  S.volcApiKey = S.volcApiKey || '';
+  S.volcProxyUrl = S.volcProxyUrl || '';
+  S.volcVoice = S.volcVoice || 'zh_female_vv_uranus_bigtts';
+
+  // 加载历史
+  var hist = localStorage.getItem('xinyu_history');
+  if (hist) { try { history = JSON.parse(hist); } catch(e) {} }
+  turnCount = Math.floor(history.length / 2);
+  summary = localStorage.getItem('xinyu_summary') || '';
+
+  // ★ 恢复错误日志
+  restoreErrorLog();
+
+  // 深色模式
+  if (S.darkMode) document.documentElement.setAttribute('data-theme', 'dark');
+
+  applySettings();
+  renderHistory();
+
+  if (typeof speechSynthesis !== 'undefined') speechSynth = speechSynthesis;
+  if (window.__nativeTTS__) hasNativeTTS = true;
+
+  // 聊天区域滚动监听：显示/隐藏"滚到底部"按钮
+  var chatArea = document.getElementById('chatArea');
+  chatArea.addEventListener('scroll', function() {
+    var btn = document.getElementById('scrollBottomBtn');
+    var atBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 80;
+    btn.classList.toggle('visible', !atBottom);
+  });
+}
+
+function applySettings() {
+  document.getElementById('setApiUrl').value = S.apiUrl;
+  document.getElementById('setApiKey').value = S.apiKey || '';
+  document.getElementById('setSystem').value = S.system;
+  document.getElementById('setBackground').value = S.background || '';
+  document.getElementById('setEdgeVoice').value = S.edgeVoice;
+  document.getElementById('modelLabel').textContent = S.model;
+  var toggle = document.getElementById('ttsAutoToggle');
+  toggle.classList.toggle('on', S.ttsAuto);
+  var rrToggle = document.getElementById('ttsReadReasoningToggle');
+  if (rrToggle) rrToggle.classList.toggle('on', S.ttsReadReasoning);
+  var retainToggle = document.getElementById('ttsRetainToggle');
+  if (retainToggle) retainToggle.classList.toggle('on', S.ttsRetain);
+  var retainPathRow = document.getElementById('retainPathRow');
+  if (retainPathRow) retainPathRow.style.display = S.ttsRetain ? 'block' : 'none';
+  var retainPathInput = document.getElementById('setRetainPath');
+  if (retainPathInput) retainPathInput.value = S.retainPath || '';
+  // 火山引擎豆包 TTS
+  document.getElementById('setVolcApiKey').value = S.volcApiKey || '';
+  document.getElementById('setVolcProxyUrl').value = S.volcProxyUrl || '';
+  document.getElementById('setVolcVoice').value = S.volcVoice || 'zh_female_vv_uranus_bigtts';
+  document.querySelectorAll('.tts-mode-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tts === S.ttsMode); });
+  document.querySelectorAll('.model-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.model === S.model); });
+  // 深色模式按钮图标
+  document.getElementById('darkBtn').textContent = S.darkMode ? '☀️' : '🌙';
+  updateTurnCounter();
+}
+
+/* ═══════════════════════════════════════════
+   深色模式
+   ═══════════════════════════════════════════ */
+
+function toggleDarkMode() {
+  S.darkMode = !S.darkMode;
+  document.documentElement.setAttribute('data-theme', S.darkMode ? 'dark' : '');
+  document.getElementById('darkBtn').textContent = S.darkMode ? '☀️' : '🌙';
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+}
+
+/* ═══════════════════════════════════════════
+   Markdown 渲染器
+   处理 AI 回复中的常见格式：加粗、列表、代码块、标题等
+   ═══════════════════════════════════════════ */
+
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  // 1. 保护代码块：提取并用占位符替换
+  var codeBlocks = [];
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
+    codeBlocks.push('<pre class="md-pre"><code>' + escapeHtml(code.trimEnd()) + '</code></pre>');
+    return '\x00CB' + (codeBlocks.length - 1) + '\x00';
+  });
+
+  // 2. 转义 HTML
+  text = escapeHtml(text);
+
+  // 3. 内联格式（在代码块占位符之外）
+  // 行内代码
+  text = text.replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>');
+  // 加粗 **text**
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // 斜体 *text*（避免匹配 ** 已处理的部分）
+  text = text.replace(/(?:^|[\s(])\*([^*\n]+)\*(?:[\s.,;:!?)])/g, function(m, p1) {
+    return m.replace('*' + p1 + '*', '<em>' + p1 + '</em>');
+  });
+  // 链接 [text](url)
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a class="md-a" href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // 4. 按行处理块级元素
+  var lines = text.split('\n');
+  var result = [];
+  var inUl = false, inOl = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+
+    // 代码块占位符 → 直接输出
+    if (/^\x00CB\d+\x00$/.test(line)) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      result.push(line);
+      continue;
+    }
+
+    // 标题
+    if (/^### /.test(line)) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      result.push('<div class="md-h3">' + line.slice(4) + '</div>');
+      continue;
+    }
+    if (/^## /.test(line)) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      result.push('<div class="md-h2">' + line.slice(3) + '</div>');
+      continue;
+    }
+
+    // 引用
+    if (/^&gt; /.test(line)) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      result.push('<blockquote class="md-bq">' + line.slice(5) + '</blockquote>');
+      continue;
+    }
+
+    // 无序列表
+    if (/^[-*] /.test(line)) {
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      if (!inUl) { result.push('<ul class="md-ul">'); inUl = true; }
+      result.push('<li>' + line.replace(/^[-*] /, '') + '</li>');
+      continue;
+    }
+
+    // 有序列表
+    if (/^\d+\. /.test(line)) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (!inOl) { result.push('<ol class="md-ol">'); inOl = true; }
+      result.push('<li>' + line.replace(/^\d+\. /, '') + '</li>');
+      continue;
+    }
+
+    // 分割线
+    if (/^---+$/.test(line.trim())) {
+      if (inUl) { result.push('</ul>'); inUl = false; }
+      if (inOl) { result.push('</ol>'); inOl = false; }
+      result.push('<hr class="md-hr">');
+      continue;
+    }
+
+    // 普通行
+    if (inUl) { result.push('</ul>'); inUl = false; }
+    if (inOl) { result.push('</ol>'); inOl = false; }
+    if (line.trim()) {
+      result.push('<p>' + line + '</p>');
+    } else {
+      result.push('<div style="height:6px;"></div>');
+    }
+  }
+  if (inUl) result.push('</ul>');
+  if (inOl) result.push('</ol>');
+
+  text = result.join('');
+
+  // 5. 恢复代码块
+  text = text.replace(/\x00CB(\d+)\x00/g, function(m, idx) {
+    return codeBlocks[parseInt(idx)];
+  });
+
+  return '<div class="md-body">' + text + '</div>';
+}
+
+/* ═══════════════════════════════════════════
+   TTS 工具函数
+   ═══════════════════════════════════════════ */
+
+function cleanTextForTTS(text) {
+  if (!text) return '';
+  return text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[*_~>#\[\]]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function splitIntoChunks(text, maxLen) {
+  maxLen = maxLen || 120;
+  var chunks = [];
+  var paragraphs = text.split(/\n+/);
+  for (var p = 0; p < paragraphs.length; p++) {
+    var para = paragraphs[p].trim();
+    if (!para) continue;
+    if (para.length <= maxLen) { chunks.push(para); continue; }
+    var sentences = para.match(/[^。！？；…]+[。！？；…]?/g);
+    if (!sentences) sentences = [para];
+    var buf = '';
+    for (var s = 0; s < sentences.length; s++) {
+      var seg = sentences[s];
+      if (buf.length + seg.length > maxLen) {
+        if (buf) { chunks.push(buf.trim()); buf = ''; }
+        while (seg.length > maxLen) { chunks.push(seg.slice(0, maxLen)); seg = seg.slice(maxLen); }
+        buf = seg;
+      } else { buf += seg; }
+    }
+    if (buf.trim()) chunks.push(buf.trim());
+  }
+  return chunks.filter(function(c) { return c.length > 0; });
+}
+
+function speakText(text, speakBtn) {
+  stopSpeaking();
+  var clean = cleanTextForTTS(text);
+  if (!clean) return;
+
+  ttsActiveSpeakBtn = speakBtn || null;
+  if (ttsActiveSpeakBtn) {
+    ttsActiveSpeakBtn.textContent = '\u23F9\uFE0F';
+    ttsActiveSpeakBtn.classList.add('playing');
+  }
+
+  // ★ 留存语音重播：如果该 hidx 已有保留音频，直接重播
+  if (S.ttsRetain && speakBtn) {
+    var wrap = speakBtn.closest('.bubble-wrap');
+    var hidx = wrap ? parseInt(wrap.dataset.hidx) : -1;
+    if (hidx >= 0 && retainedAudios[hidx]) {
+      var retained = retainedAudios[hidx];
+      if (retained === 'saved_to_file') {
+        // 原生 TTS 保存的文件，无法在 WebView 内重播，提示用户从文件打开
+        showToast('📁 语音已保存到文件，请从文件夹打开播放');
+        return;
+      }
+      if (typeof retained.play === 'function') {
+        isSpeaking = true;
+        retained.currentTime = 0;
+        retained.onended = function() { finishPlaying(); };
+        retained.onerror = function() { finishPlaying(); };
+        retained.play();
+        return;
+      }
+    }
+  }
+
+  // ═════════════════════════════════════════
+  // ★ 留存模式：后台生成/保存音频文件
+  // 播放仍走下方正常 TTS 路径（原生 → Edge → Web Speech）
+  // ═════════════════════════════════════════
+  if (S.ttsRetain) {
+    var saveWrap = speakBtn ? speakBtn.closest('.bubble-wrap') : null;
+    var saveHidx = saveWrap ? parseInt(saveWrap.dataset.hidx) : -1;
+
+    if (isContentProtocol()) {
+      // ── content:// 环境（可能是 APK WebView，也可能是浏览器打开本地文件）──
+      var nativeOk = !!(window.__nativeTTS__ && typeof window.__nativeTTS__.speak === 'function');
+      if (nativeOk && S.retainPath && saveHidx >= 0) {
+        // 有原生桥 → 走最可靠的 save-tts:// 路径
+        requestNativeTTSSave(clean, saveHidx, speakBtn);
+      } else if (!S.retainPath) {
+        showToast('⚠️ 请先在设置中配置语音保存路径');
+        logError('语音保存', '未配置保存路径', 'retainPath空');
+      } else if (saveHidx < 0) {
+        showToast('⚠️ 无法定位消息索引（hidx=' + saveHidx + '）');
+        logError('语音保存', '消息索引无效', 'hidx=' + saveHidx);
+      } else {
+        // ★ 无原生桥 → 回退尝试 Edge-TTS / HTTP TTS（浏览器环境下 WebSocket 可能可用）
+        logError('语音保存', '无原生桥，回退Edge-TTS尝试', 'nativeOk=' + nativeOk + ', protocol=' + location.protocol);
+        generateAndSaveEdgeAudio(clean, speakBtn);
+      }
+    } else {
+      // ── 桌面/普通浏览器环境（所有 Web API 可用）──
+      var willUseEdge = !hasNativeTTS && S.ttsMode === 'edge';
+      if (hasNativeTTS && window.__nativeTTS__ && S.retainPath && saveHidx >= 0) {
+        // Android 原生 TTS：通过 Kivy synthesizeToFile 直接保存（最可靠）
+        requestNativeTTSSave(clean, saveHidx, speakBtn);
+      } else if (!willUseEdge) {
+        // 桌面端非Edge模式：用 Edge-TTS 后台生成 MP3 保存
+        generateAndSaveEdgeAudio(clean, speakBtn);
+      }
+      // willUseEdge=true 时由 playEdgeTTSQueue 内部处理留存（播放+保存一体化）
+    }
+  }
+
+  // 优先级 1：Android 原生 TTS（Kivy 注入）
+  if (hasNativeTTS && window.__nativeTTS__) {
+    isSpeaking = true;
+    ttsQueue = splitIntoChunks(clean, NATIVE_TTS_MAX_CHARS);
+    edgeTTSRemainingChunks = [];
+    playNextNativeChunk();
+    return;
+  }
+
+  // 优先级 2：Edge-TTS（桌面端微软语音）
+  if (S.ttsMode === 'edge') {
+    isSpeaking = true;
+    ttsQueue = splitIntoChunks(clean, 200);
+    playEdgeTTSQueue(ttsQueue, S.edgeVoice, speakBtn, clean);
+    return;
+  }
+
+  // 优先级 3：Web Speech API（浏览器内置）
+  if (!speechSynth) {
+    if (ttsActiveSpeakBtn) {
+      ttsActiveSpeakBtn.textContent = '\u{1F50A}';
+      ttsActiveSpeakBtn.classList.remove('playing');
+      ttsActiveSpeakBtn = null;
+    }
+    return;
+  }
+
+  ttsQueue = splitIntoChunks(clean, 120);
+  isSpeaking = true;
+  playNextChunk();
+}
+
+var ttsChunkTimer = null;
+var ttsChunkDone = false;
+
+function playNextChunk() {
+  clearTimeout(ttsChunkTimer);
+  if (!isSpeaking || ttsQueue.length === 0) { finishPlaying(); return; }
+
+  var chunk = ttsQueue.shift();
+  ttsChunkDone = false;
+
+  ttsUtterance = new SpeechSynthesisUtterance(chunk);
+  ttsUtterance.lang = 'zh-CN';
+  ttsUtterance.rate = 1.05;
+  ttsUtterance.pitch = 1.0;
+
+  var voices = speechSynth.getVoices();
+  var zhVoice = voices.find(function(v) { return v.lang === 'zh-CN' && v.localService; })
+    || voices.find(function(v) { return v.lang === 'zh-CN'; })
+    || voices.find(function(v) { return v.lang.indexOf('zh') === 0; });
+  if (zhVoice) ttsUtterance.voice = zhVoice;
+
+  ttsUtterance.onend = function() {
+    ttsChunkDone = true;
+    clearTimeout(ttsChunkTimer);
+    if (isSpeaking) playNextChunk(); else finishPlaying();
+  };
+  ttsUtterance.onerror = function(e) {
+    ttsChunkDone = true;
+    clearTimeout(ttsChunkTimer);
+    if (e.error === 'canceled' || e.error === 'interrupted') {
+      if (isSpeaking) {
+        ttsQueue.unshift(chunk);
+        setTimeout(function() { if (isSpeaking) playNextChunk(); }, 200);
+      }
+      return;
+    }
+    logError('浏览器TTS', '语音合成错误', e.error || 'unknown');
+    if (isSpeaking && ttsQueue.length > 0) playNextChunk(); else finishPlaying();
+  };
+
+  var estimatedMs = Math.max(5000, (chunk.length / 3.5) * 1000 + 8000);
+  ttsChunkTimer = setTimeout(function() {
+    if (!ttsChunkDone) {
+      ttsChunkDone = true;
+      if (isSpeaking) playNextChunk(); else finishPlaying();
+    }
+  }, estimatedMs);
+
+  speechSynth.speak(ttsUtterance);
+}
+
+function finishPlaying() {
+  clearTimeout(ttsChunkTimer);
+  clearTimeout(nativeTTSWatchdog);
+  ttsChunkDone = false;
+  isSpeaking = false;
+  edgeTTSRemainingChunks = [];
+  if (edgeTTSAudio) { edgeTTSAudio.pause(); edgeTTSAudio = null; }
+  if (edgeTTSWs) { try { edgeTTSWs.close(); } catch(e) {} edgeTTSWs = null; }
+  if (ttsActiveSpeakBtn) {
+    ttsActiveSpeakBtn.textContent = '\u{1F50A}';
+    ttsActiveSpeakBtn.classList.remove('playing');
+    ttsActiveSpeakBtn = null;
+  }
+}
+
+/* ═══ 原生 TTS 分段串联（Android Talkify）═══ */
+
+function playNextNativeChunk() {
+  clearTimeout(nativeTTSWatchdog);
+  if (!isSpeaking || ttsQueue.length === 0) { finishPlaying(); return; }
+  var chunk = ttsQueue.shift();
+  window.__nativeTTS__.speak(chunk);
+
+  var estimatedMs = Math.max(5000, (chunk.length / 3.5) * 1000 + 5000);
+  nativeTTSWatchdog = setTimeout(function() {
+    if (isSpeaking) {
+      if (ttsQueue.length > 0) playNextNativeChunk(); else finishPlaying();
+    }
+  }, estimatedMs);
+}
+
+/* ═══ Edge-TTS 远程合成 ═══ */
+
+function mergeBuffers(arrays) {
+  var totalLen = 0;
+  for (var i = 0; i < arrays.length; i++) totalLen += arrays[i].length;
+  var result = new Uint8Array(totalLen);
+  var offset = 0;
+  for (var i = 0; i < arrays.length; i++) {
+    result.set(arrays[i], offset);
+    offset += arrays[i].length;
+  }
+  return result.buffer;
+}
+
+function edgeUUID() {
+  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/* ═══ Edge-TTS 中国地区 403 修复：Sec-MS-GEC 验证参数 ═══ */
+
+var EDGE_TTS_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+var EDGE_TTS_WIN_EPOCH = 11644473600; // 1601-01-01 → 1970-01-01 的秒数
+var EDGE_TTS_SEC_MS_GEC_VERSION = '1-143.0.3650.75';
+var edgeTTSClockSkew = 0; // 服务器时钟偏移校正（秒）
+var edgeTTSLastDiag = ''; // 诊断信息
+
+/* ═══ 纯 JS SHA-256 实现（crypto.subtle 在非 HTTPS 环境下不可用的 fallback）═══ */
+var sha256_js = (function() {
+  // SHA-256 常量
+  var K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+
+  function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+
+  function sha256(str) {
+    // 将字符串转为 UTF-8 字节数组
+    var bytes = [];
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c < 0x80) bytes.push(c);
+      else if (c < 0x800) { bytes.push(0xc0 | (c >> 6)); bytes.push(0x80 | (c & 0x3f)); }
+      else if (c < 0xd800 || c >= 0xe000) {
+        bytes.push(0xe0 | (c >> 12)); bytes.push(0x80 | ((c >> 6) & 0x3f)); bytes.push(0x80 | (c & 0x3f));
+      } else {
+        c = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(++i) & 0x3ff));
+        bytes.push(0xf0 | (c >> 18)); bytes.push(0x80 | ((c >> 12) & 0x3f));
+        bytes.push(0x80 | ((c >> 6) & 0x3f)); bytes.push(0x80 | (c & 0x3f));
+      }
+    }
+
+    // 消息填充
+    var msgLen = bytes.length;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    var bitLen = msgLen * 8;
+    bytes.push(0, 0, 0, 0);
+    bytes.push((bitLen >>> 24) & 0xff, (bitLen >>> 16) & 0xff, (bitLen >>> 8) & 0xff, bitLen & 0xff);
+
+    // 初始化哈希值
+    var h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+    var h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+
+    // 处理每个 512-bit 块
+    for (var offset = 0; offset < bytes.length; offset += 64) {
+      var w = [];
+      for (var t = 0; t < 16; t++) {
+        w[t] = (bytes[offset + t*4] << 24) | (bytes[offset + t*4+1] << 16) |
+               (bytes[offset + t*4+2] << 8) | bytes[offset + t*4+3];
+      }
+      for (var t = 16; t < 64; t++) {
+        var s0 = rightRotate(w[t-15], 7) ^ rightRotate(w[t-15], 18) ^ (w[t-15] >>> 3);
+        var s1 = rightRotate(w[t-2], 17) ^ rightRotate(w[t-2], 19) ^ (w[t-2] >>> 10);
+        w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
+      }
+
+      var a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+      for (var t = 0; t < 64; t++) {
+        var S1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
+        var ch = (e & f) ^ (~e & g);
+        var temp1 = (h + S1 + ch + K[t] + w[t]) | 0;
+        var S0 = rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22);
+        var maj = (a & b) ^ (a & c) ^ (b & c);
+        var temp2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + temp1) | 0;
+        d = c; c = b; b = a; a = (temp1 + temp2) | 0;
+      }
+
+      h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0;
+      h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+    }
+
+    function hex(n) { return ('00000000' + (n >>> 0).toString(16)).slice(-8); }
+    return hex(h0) + hex(h1) + hex(h2) + hex(h3) + hex(h4) + hex(h5) + hex(h6) + hex(h7);
+  }
+
+  return sha256;
+})();
+
+// 生成 Sec-MS-GEC token（SHA256 哈希，与 Python edge-tts drm.py 算法一致）
+// ★ 优先使用 crypto.subtle（快），不可用时回退到纯 JS SHA-256（兼容非 HTTPS 环境）
+async function generateSecMsGec() {
+  var ticks = Math.floor(Date.now() / 1000) + edgeTTSClockSkew;
+  ticks += EDGE_TTS_WIN_EPOCH;
+  ticks -= ticks % 300; // 向下取整到 5 分钟
+  ticks = ticks * 10000000; // 转换为 100 纳秒间隔（Windows File Time）
+  var strToHash = ticks.toString() + EDGE_TTS_TOKEN;
+
+  var hashHex;
+  // ★ 优先使用 Web Crypto API（HTTPS 环境下更快）
+  if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
+    try {
+      var hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(strToHash));
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      hashHex = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    } catch(e) {
+      console.warn('[Edge-TTS] crypto.subtle.digest 失败，回退到纯 JS SHA-256:', e.message);
+      hashHex = sha256_js(strToHash);
+    }
+  } else {
+    // ★ 非 HTTPS 环境（file:// 或 http://），crypto.subtle 不可用
+    console.warn('[Edge-TTS] crypto.subtle 不可用（非安全上下文），使用纯 JS SHA-256');
+    hashHex = sha256_js(strToHash);
+  }
+
+  return hashHex.toUpperCase();
+}
+
+// 构建 Edge-TTS WebSocket URL（含 Sec-MS-GEC 验证参数）
+async function buildEdgeTTSWsUrl() {
+  var connId = edgeUUID();
+  var secMsGec;
+  try {
+    secMsGec = await generateSecMsGec();
+    edgeTTSLastDiag = 'Sec-MS-GEC 生成成功';
+  } catch(e) {
+    edgeTTSLastDiag = 'Sec-MS-GEC 生成失败: ' + e.message;
+    // 退回不含 Sec-MS-GEC 的 URL（可能会 403，但至少尝试连接）
+    return 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1' +
+      '?TrustedClientToken=' + EDGE_TTS_TOKEN +
+      '&ConnectionId=' + connId;
+  }
+  return 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1' +
+    '?TrustedClientToken=' + EDGE_TTS_TOKEN +
+    '&ConnectionId=' + connId +
+    '&Sec-MS-GEC=' + secMsGec +
+    '&Sec-MS-GEC-Version=' + EDGE_TTS_SEC_MS_GEC_VERSION;
+}
+
+// ★ 错误日志系统（可复制给开发者排查）
+var errorLog = [];
+function logError(category, message, detail) {
+  var entry = {
+    time: new Date().toISOString(),
+    cat: category || '未知',
+    msg: message || '',
+    detail: detail || ''
+  };
+  errorLog.push(entry);
+  // 最多保留 100 条
+  if (errorLog.length > 100) errorLog.shift();
+  // 同步写入 localStorage
+  try { localStorage.setItem('xinyu_errorlog', JSON.stringify(errorLog)); } catch(e) {}
+  console.error('[错误日志] [' + entry.cat + '] ' + entry.msg, entry.detail);
+  // ★ 更新设置面板中的按钮文字，显示错误条数
+  var btn = document.getElementById('errorLogBtn');
+  if (btn) btn.textContent = '📋 错误日志（' + errorLog.length + ' 条）';
+  // ★ 更新顶部设置按钮上的红色角标
+  var badge = document.getElementById('errorBadge');
+  if (badge) {
+    badge.textContent = errorLog.length;
+    badge.classList.add('visible');
+  }
+}
+
+// ★ 生成可复制的错误报告文本
+function getErrorLogText() {
+  if (errorLog.length === 0) return '暂无错误日志';
+  var lines = [];
+  lines.push('═══ 心语 AI 错误日志 ═══');
+  lines.push('导出时间: ' + new Date().toISOString());
+  lines.push('协议: ' + location.protocol);
+  lines.push('UA: ' + navigator.userAgent);
+  lines.push('原生TTS: ' + (hasNativeTTS ? '有' : '无'));
+  lines.push('crypto.subtle: ' + (typeof crypto !== 'undefined' && crypto.subtle ? '可用' : '不可用'));
+  lines.push('');
+  for (var i = 0; i < errorLog.length; i++) {
+    var e = errorLog[i];
+    lines.push('[' + e.time + '] [' + e.cat + '] ' + e.msg);
+    if (e.detail) lines.push('  → ' + e.detail);
+  }
+  lines.push('');
+  lines.push('═══ 日志结束 ═══');
+  return lines.join('\n');
+}
+
+// ★ 打开错误日志面板
+function openErrorLog() {
+  var drawer = document.getElementById('errorLogDrawer');
+  var content = document.getElementById('errorLogContent');
+  if (!drawer || !content) return;
+  content.textContent = getErrorLogText();
+  openDrawer('errorLogDrawer');
+}
+
+// ★ 复制错误日志到剪贴板
+function copyErrorLog() {
+  var text = getErrorLogText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('✅ 错误日志已复制到剪贴板');
+    }).catch(function() {
+      fallbackCopyErrorLog(text);
+    });
+  } else {
+    fallbackCopyErrorLog(text);
+  }
+}
+function fallbackCopyErrorLog(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('✅ 错误日志已复制到剪贴板');
+  } catch(e) {
+    showToast('❌ 复制失败，请手动选择文本复制');
+  }
+  document.body.removeChild(ta);
+}
+
+// ★ 清空错误日志
+function clearErrorLog() {
+  errorLog = [];
+  try { localStorage.removeItem('xinyu_errorlog'); } catch(e) {}
+  document.getElementById('errorLogContent').textContent = '暂无错误日志';
+  var btn = document.getElementById('errorLogBtn');
+  if (btn) btn.textContent = '📋 错误日志（复制给开发者）';
+  var badge = document.getElementById('errorBadge');
+  if (badge) badge.classList.remove('visible');
+  showToast('🗑️ 错误日志已清空');
+}
+
+// ★ 启动时恢复错误日志
+function restoreErrorLog() {
+  try {
+    var saved = localStorage.getItem('xinyu_errorlog');
+    if (saved) errorLog = JSON.parse(saved);
+  } catch(e) { errorLog = []; }
+  // 更新按钮显示错误条数
+  if (errorLog.length > 0) {
+    var btn = document.getElementById('errorLogBtn');
+    if (btn) btn.textContent = '📋 错误日志（' + errorLog.length + ' 条）';
+    var badge = document.getElementById('errorBadge');
+    if (badge) {
+      badge.textContent = errorLog.length;
+      badge.classList.add('visible');
+    }
+  }
+}
+
+// ★ 诊断 Edge-TTS 连接问题
+function diagnoseEdgeTTS(errorMsg) {
+  var info = [];
+  info.push('错误: ' + (errorMsg || '未知'));
+  info.push('Token: ' + edgeTTSLastDiag);
+  info.push('crypto.subtle: ' + (typeof crypto !== 'undefined' && crypto.subtle ? '可用' : '不可用'));
+  info.push('协议: ' + location.protocol);
+  info.push('时间: ' + new Date().toISOString());
+  var diag = info.join(' | ');
+  console.error('[Edge-TTS 诊断] ' + diag);
+  // ★ 写入错误日志
+  logError('Edge-TTS', errorMsg || '未知错误', diag);
+  return diag;
+}
+
+function edgeTTSSpeak(text, voice, retainHidx) {
+  voice = voice || 'zh-CN-XiaoxiaoNeural';
+
+  return new Promise(function(resolve, reject) {
+    // ★ 先异步生成 Sec-MS-GEC token，再创建 WebSocket
+    buildEdgeTTSWsUrl().then(function(wsUrl) {
+      try {
+        var ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+        edgeTTSWs = ws;
+        var audioChunks = [];
+        var done = false;
+
+        // ★ 连接超时保护：8秒连不上就放弃
+        var connectTimeout = setTimeout(function() {
+          if (!done) {
+            done = true;
+            try { ws.close(); } catch(e) {}
+            edgeTTSWs = null;
+            reject(new Error('Edge TTS 连接超时'));
+          }
+        }, 8000);
+
+        ws.onopen = function() {
+          clearTimeout(connectTimeout);
+          var ts = new Date().toISOString().replace(/\.\d{3}/, '');
+          ws.send(
+            'X-Timestamp:' + ts + '\r\n' +
+            'Content-Type:application/json; charset=utf-8\r\n' +
+            'Path:speech.config\r\n' +
+            '\r\n' +
+            '{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}'
+          );
+
+          var rid = edgeUUID();
+          var ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-CN">' +
+            '<voice name="' + voice + '">' +
+            '<prosody rate="+5%" pitch="+0Hz">' + escapeXml(text) + '</prosody>' +
+            '</voice></speak>';
+
+          ws.send(
+            'X-RequestId:' + rid + '\r\n' +
+            'Content-Type:application/ssml+xml\r\n' +
+            'X-Timestamp:' + ts + '\r\n' +
+            'Path:ssml\r\n' +
+            '\r\n' +
+            ssml
+          );
+        };
+
+        ws.onmessage = function(e) {
+          if (done) return;
+          if (!isSpeaking) { done = true; ws.close(); reject(new Error('stopped')); return; }
+          if (typeof e.data === 'string') {
+            if (e.data.indexOf('Path:turn.end') !== -1) {
+              done = true;
+              ws.close();
+              if (!isSpeaking) { reject(new Error('stopped')); return; }
+              if (audioChunks.length === 0) {
+                edgeTTSWs = null;
+                resolve(null);
+                return;
+              }
+              var blob = new Blob(audioChunks, { type: 'audio/mpeg' });
+              var url = URL.createObjectURL(blob);
+              edgeTTSAudio = new Audio(url);
+              edgeTTSAudio.volume = 1.0;
+              edgeTTSAudio.onended = function() {
+                URL.revokeObjectURL(url);
+                edgeTTSAudio = null;
+                edgeTTSWs = null;
+                try {
+                  resolve(new Uint8Array(mergeBuffers(audioChunks)));
+                } catch(ex) {
+                  resolve(null);
+                }
+              };
+              edgeTTSAudio.onerror = function() {
+                URL.revokeObjectURL(url);
+                edgeTTSAudio = null;
+                edgeTTSWs = null;
+                try {
+                  resolve(new Uint8Array(mergeBuffers(audioChunks)));
+                } catch(ex) {
+                  resolve(null);
+                }
+              };
+              edgeTTSAudio.play().catch(function(playErr) {
+                console.warn('Edge TTS play() failed:', playErr);
+                logError('Edge-TTS', 'play() 失败', playErr.message || String(playErr));
+                URL.revokeObjectURL(url);
+                edgeTTSAudio = null;
+                edgeTTSWs = null;
+                try {
+                  resolve(new Uint8Array(mergeBuffers(audioChunks)));
+                } catch(ex) {
+                  resolve(null);
+                }
+              });
+            }
+          } else if (e.data instanceof ArrayBuffer) {
+            var buf = new Uint8Array(e.data);
+            var headerLen = (buf[0] << 8) | buf[1];
+            var audioData = buf.slice(2 + headerLen);
+            if (audioData.length > 0) audioChunks.push(audioData);
+          }
+        };
+
+        ws.onerror = function() {
+          clearTimeout(connectTimeout);
+          if (!done) {
+            done = true;
+            edgeTTSWs = null;
+            var diag = diagnoseEdgeTTS('WebSocket onerror (readyState=' + (ws ? ws.readyState : 'N/A') + ')');
+            reject(new Error('Edge TTS 连接失败 [' + diag + ']'));
+          }
+        };
+        ws.onclose = function(e) {
+          clearTimeout(connectTimeout);
+          if (!done) {
+            done = true;
+            edgeTTSWs = null;
+            var reason = 'code=' + e.code;
+            if (e.code === 1006) reason += '(异常关闭/网络问题)';
+            if (e.code === 1003) reason += '(403 Forbidden-缺少验证参数)';
+            if (e.code === 1008) reason += '(策略违反)';
+            if (e.code === 1001) reason += '(服务器关闭)';
+            logError('Edge-TTS', '播放 WS onclose', reason);
+            var diag = diagnoseEdgeTTS('WebSocket onclose ' + reason);
+            reject(new Error('Edge TTS 关闭 [' + diag + ']'));
+          }
+        };
+      } catch(ex) { reject(ex); }
+    }).catch(function(err) {
+      reject(new Error('Edge TTS token 生成失败: ' + err.message));
+    });
+  });
+}
+
+async function playEdgeTTSQueue(chunks, voice, speakBtn, fallbackText) {
+  var retainHidx = -1;
+  if (S.ttsRetain && speakBtn) {
+    var wrap = speakBtn.closest('.bubble-wrap');
+    retainHidx = wrap ? parseInt(wrap.dataset.hidx) : -1;
+  }
+
+  // ★ 留存模式：收集所有 chunk 的 MP3 数据，最后合并保存
+  var allAudioParts = [];
+  var shouldRetain = S.ttsRetain && retainHidx >= 0;
+  var edgeErrors = 0;
+
+  for (var i = 0; i < chunks.length; i++) {
+    if (!isSpeaking) break;
+    // ★ 每段最多重试 2 次（播放场景用较少重试，避免等太久）
+    var maxPlayRetry = (i === 0) ? 3 : 2;
+    var succeeded = false;
+    for (var retry = 0; retry < maxPlayRetry; retry++) {
+      if (!isSpeaking) break;
+      try {
+        var audioData = await edgeTTSSpeak(chunks[i], voice, retainHidx);
+        if (shouldRetain && audioData) allAudioParts.push(audioData);
+        succeeded = true;
+        break;
+      }
+      catch(e) {
+        if (retry < maxPlayRetry - 1) {
+          // 重试前等待
+          var retryDelay = 500 * (retry + 1);
+          await new Promise(function(r) { setTimeout(r, retryDelay); });
+        } else {
+          edgeErrors++;
+          logError('Edge-TTS', '播放段 ' + (i+1) + '/' + chunks.length + ' 失败', e.message);
+          // 第一个 chunk 就全部重试失败，立即回退
+          if (i === 0) break;
+        }
+      }
+    }
+    if (!succeeded && i === 0) break;
+    // ★ 段间短暂等待（300ms），避免连续连接被限流
+    if (succeeded && i < chunks.length - 1) {
+      await new Promise(function(r) { setTimeout(r, 300); });
+    }
+  }
+
+  // ★ Edge-TTS 全部失败时，自动回退到浏览器 TTS
+  if (edgeErrors > 0 && edgeErrors >= chunks.length && fallbackText && speechSynth) {
+    console.warn('Edge-TTS 全部失败，回退到浏览器 TTS');
+    logError('Edge-TTS', '全部 ' + chunks.length + ' 段失败，已回退浏览器 TTS', chunks.length + ' 段');
+    showToast('⚠️ Edge-TTS 连接失败，已自动切换到浏览器 TTS');
+    ttsQueue = splitIntoChunks(fallbackText, 120);
+    isSpeaking = true;
+    playNextChunk();
+    return;
+  } else if (edgeErrors > 0 && edgeErrors < chunks.length) {
+    // 部分成功，部分失败
+    logError('Edge-TTS', '部分分段失败', edgeErrors + '/' + chunks.length + ' 段');
+    showToast('⚠️ Edge-TTS 部分分段失败（' + edgeErrors + '/' + chunks.length + '）');
+  }
+
+  // ★ 合并所有 chunk 的音频并触发浏览器下载
+  if (shouldRetain && allAudioParts.length > 0) {
+    var fullBlob = new Blob(allAudioParts, { type: 'audio/mpeg' });
+
+    // 内存留存（用于重播）
+    var retainUrl = URL.createObjectURL(fullBlob);
+    retainedAudios[retainHidx] = new Audio(retainUrl);
+
+    // ★ 根据聊天内容生成文件名
+    var fileName = generateAudioFileName(currentPlayText || '语音');
+    if (retainHidx >= 0 && history[retainHidx]) {
+      fileName = generateAudioFileName(history[retainHidx]);
+    }
+
+    // 触发浏览器下载（不依赖原生桥接）
+    var dlUrl = URL.createObjectURL(fullBlob);
+    var a = document.createElement('a');
+    a.href = dlUrl;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { try { URL.revokeObjectURL(dlUrl); } catch(e) {}
+                      try { document.body.removeChild(a); } catch(e) {} }, 3000);
+
+    showToast('💾 语音已保存：' + fileName);
+  }
+
+  finishPlaying();
+}
+
+function escapeXml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+/* ═══ 原生 TTS 保存（Android Talkify synthesizeToFile）═══ */
+
+function requestNativeTTSSave(text, hidx, speakBtn) {
+  // 通过 Kivy WebView URL 拦截，让 Android 原生 TTS 引擎直接合成到 WAV 文件
+  console.log('[Save-TTS] requestNativeTTSSave called', {
+    textLen: text.length,
+    hidx: hidx,
+    retainPath: S.retainPath,
+    protocol: location.protocol,
+    hasBridge: !!window.__nativeTTS__
+  });
+
+  var now = new Date();
+  var ts = now.getFullYear() +
+    String(now.getMonth()+1).padStart(2,'0') +
+    String(now.getDate()).padStart(2,'0') + '_' +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0') +
+    String(now.getSeconds()).padStart(2,'0');
+
+  var name = '心语_' + ts + '.wav';
+  var saveUrl = 'save-tts://synthesize' +
+    '?text=' + encodeURIComponent(text) +
+    '&path=' + encodeURIComponent(S.retainPath) +
+    '&name=' + encodeURIComponent(name) +
+    '&hidx=' + hidx;
+
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = saveUrl;
+  document.body.appendChild(iframe);
+  setTimeout(function() { document.body.removeChild(iframe); }, 5000);
+
+  showToast('⏳ Talkify 正在合成语音文件...');
+
+  // ★ 超时保护：如果 15 秒内没有收到 __onTTSFileSaved 回调，
+  //   说明 save-tts:// 可能未被拦截或 synthesizeToFile 卡住
+  window.__ttsSaveTimeout = setTimeout(function() {
+    showToast('⚠️ 语音保存超时（15s无响应），请检查保存路径是否可写');
+    logError('语音保存', 'save-tts回调超时', 'saveUrl=' + saveUrl.substring(0, 80) + '...');
+  }, 15000);
+}
+
+// ★ Kivy 回调：原生 TTS synthesizeToFile 完成
+window.__onTTSFileSaved = function(hidx, failed) {
+  // 清除超时保护
+  if (window.__ttsSaveTimeout) {
+    clearTimeout(window.__ttsSaveTimeout);
+    window.__ttsSaveTimeout = null;
+  }
+
+  if (failed) {
+    showToast('❌ Talkify 语音保存失败');
+    logError('语音保存', 'Talkify synthesizeToFile 失败', 'hidx=' + hidx);
+    return;
+  }
+  // 文件已保存到磁盘，更新内存留存（用保存路径创建 Audio 用于重播）
+  var savePath = S.retainPath ? S.retainPath.replace(/\/?$/, '/') : '';
+  // 找到最近保存的 wav 文件（按 hidx 匹配时间戳）
+  // 由于无法精确知道文件名，标记为已保存即可
+  if (hidx >= 0) {
+    // 标记该 hidx 已有留存（用占位符，重播时从文件加载）
+    retainedAudios[hidx] = 'saved_to_file';
+    // 更新按钮图标
+    var btn = document.querySelector('.bubble-wrap[data-hidx="' + hidx + '"] .speak-btn');
+    if (btn) {
+      btn.textContent = '\u{1F504}';
+      btn.title = '已保存（重播需从文件打开）';
+    }
+  }
+  showToast('💾 Talkify 语音已保存到：' + (S.retainPath || '指定目录'));
+};
+
+/* ═══ HTTP TTS 保存（Google Translate TTS，比 WebSocket 更可靠）═══ */
+
+// ★ 用 Google Translate TTS HTTP API 生成音频并保存
+// 这是 WebSocket 的替代方案，在 content:// 协议下更稳定
+async function generateAndSaveHTTPTTS(text, speakBtn) {
+  // ★ content:// 环境：HTTP fetch 外部域名被阻止（真机诊断 Failed to fetch）
+  if (isContentProtocol()) {
+    console.warn('[HTTP-TTS] content://环境不可用，跳过');
+    throw new Error('HTTP TTS 在当前环境不可用（content:// 协议限制）');
+  }
+
+  var chunks = splitIntoChunks(text, 180); // Google TTS 限制约 200 字
+  var wrap = speakBtn ? speakBtn.closest('.bubble-wrap') : null;
+  var retainHidx = -1;
+  if (!wrap && typeof speakBtn === 'undefined') {
+    // 从调用者传入的上下文获取 hidx（已在 generateAndSaveEdgeAudio 中）
+    // 这里直接使用 text 参数即可
+  }
+  // 从 DOM 查找当前播放按钮对应的 hidx
+  if (ttsActiveSpeakBtn) {
+    var activeWrap = ttsActiveSpeakBtn.closest('.bubble-wrap');
+    if (activeWrap) retainHidx = parseInt(activeWrap.dataset.hidx) || -1;
+  }
+  if (retainHidx < 0 && speakBtn) {
+    var w = speakBtn.closest('.bubble-wrap');
+    if (w) retainHidx = parseInt(w.dataset.hidx) || -1;
+  }
+
+  showToast('⏳ 正在通过 HTTP 生成语音...');
+
+  var allAudioParts = [];
+  var httpErrors = 0;
+  var lastHttpError = '';
+
+  for (var i = 0; i < chunks.length; i++) {
+    var maxRetry = 3;
+    var succeeded = false;
+    for (var retry = 0; retry < maxRetry; retry++) {
+      try {
+        var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(chunks[i]);
+        var resp = await fetch(url, {
+          method: 'GET',
+          mode: 'cors',
+          headers: { 'Accept': 'audio/mpeg' }
+        });
+        if (!resp.ok) {
+          throw new Error('HTTP TTS 返回 ' + resp.status + ' ' + resp.statusText);
+        }
+        var blob = await resp.blob();
+        if (blob.size < 100) {
+          throw new Error('HTTP TTS 音频过小(' + blob.size + 'B)，可能被拦截');
+        }
+        // blob 转 Uint8Array
+        var arrayBuf = await blob.arrayBuffer();
+        allAudioParts.push(new Uint8Array(arrayBuf));
+        succeeded = true;
+        break;
+      } catch(e) {
+        lastHttpError = (e && e.message) || String(e);
+        if (retry < maxRetry - 1) {
+          var delay = 1000 * (retry + 1);
+          await new Promise(function(r) { setTimeout(r, delay); });
+        }
+      }
+    }
+    if (!succeeded) {
+      httpErrors++;
+      logError('HTTP TTS', '段 ' + (i+1) + '/' + chunks.length + ' 失败', lastHttpError);
+    }
+    // 段间延迟
+    if (succeeded && i < chunks.length - 1) {
+      await new Promise(function(r) { setTimeout(r, 300); });
+    }
+  }
+
+  if (allAudioParts.length === 0) {
+    throw new Error('HTTP TTS 全部失败: ' + lastHttpError);
+  }
+
+  // 合并所有音频
+  var fullBlob = new Blob(allAudioParts, { type: 'audio/mpeg' });
+
+  // 内存留存
+  if (retainHidx >= 0) {
+    var retainUrl = URL.createObjectURL(fullBlob);
+    retainedAudios[retainHidx] = new Audio(retainUrl);
+    // 更新按钮图标
+    var btn = document.querySelector('.bubble-wrap[data-hidx="' + retainHidx + '"] .speak-btn');
+    if (btn) {
+      btn.textContent = '🔄';
+      btn.title = '重播';
+    }
+  }
+
+  // ★ 根据聊天内容生成文件名，触发浏览器下载
+  var fileName = generateAudioFileName(text);
+
+  var dlUrl = URL.createObjectURL(fullBlob);
+  var a = document.createElement('a');
+  a.href = dlUrl;
+  a.download = fileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(dlUrl); document.body.removeChild(a); }, 3000);
+
+  if (httpErrors > 0) {
+    showToast('⚠️ HTTP TTS 部分保存（' + (chunks.length - httpErrors) + '/' + chunks.length + ' 段成功）');
+  } else {
+    showToast('💾 语音已保存（HTTP TTS）：' + fileName);
+  }
+
+  logError('语音保存', 'HTTP TTS 保存结果', allAudioParts.length + '/' + chunks.length + ' 段成功');
+  return fullBlob;
+}
+
+// ★ 测试 HTTP TTS 可用性
+async function testHTTPTTSConnection() {
+  var results = [];
+  results.push('1. 协议: ' + location.protocol);
+
+  // 测试 fetch 是否可用
+  try {
+    results.push('2. fetch API: ' + (typeof fetch !== 'undefined' ? '可用' : '不可用'));
+  } catch(e) {
+    results.push('2. fetch API: 不可用 (' + e.message + ')');
+  }
+
+  // 测试 CORS 请求
+  try {
+    var testText = '测试';
+    var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(testText);
+    var resp = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: { 'Accept': 'audio/mpeg' }
+    });
+    results.push('3. Google TTS HTTP: ' + resp.status + ' ' + resp.statusText);
+    if (resp.ok) {
+      var blob = await resp.blob();
+      results.push('4. 音频大小: ' + blob.size + ' bytes');
+      results.push('5. MIME 类型: ' + blob.type);
+      if (blob.size > 100) {
+        results.push('6. ✅ HTTP TTS 可用！');
+      } else {
+        results.push('6. ❌ 音频过小，可能被拦截');
+      }
+    } else {
+      results.push('4. ❌ HTTP 请求失败: ' + resp.status);
+    }
+  } catch(e) {
+    results.push('3. Google TTS HTTP: ❌ ' + e.message);
+    if (e.message && e.message.indexOf('Failed to fetch') !== -1) {
+      results.push('4. 原因: CORS 被阻止或网络不通');
+    } else if (e.message && e.message.indexOf('NetworkError') !== -1) {
+      results.push('4. 原因: 网络错误');
+    }
+  }
+
+  // 备用方案：用 no-cors 模式测试
+  try {
+    var url2 = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=test';
+    var resp2 = await fetch(url2, { method: 'GET', mode: 'no-cors' });
+    results.push('7. no-cors 模式: ' + resp2.type + ' (status=' + resp2.status + ')');
+  } catch(e) {
+    results.push('7. no-cors 模式: 失败 (' + e.message + ')');
+  }
+
+  var report = results.join('\n');
+  logError('HTTP TTS诊断', '连接测试结果', report);
+  alert('HTTP TTS 诊断报告:\n\n' + report);
+}
+
+/* ═══ 后台生成 Edge-TTS 音频（仅保存，不播放）═══ */
+
+// ★ 单连接批量生成：一个 WebSocket 处理所有 chunks（避免短时间大量连接被限流）
+function edgeTTSGenerateBatch(chunks, voice) {
+  voice = voice || 'zh-CN-XiaoxiaoNeural';
+
+  return new Promise(function(resolve, reject) {
+    buildEdgeTTSWsUrl().then(function(wsUrl) {
+      var ws;
+      var allAudioParts = [];
+      var currentChunkIdx = 0;
+      var currentAudioChunks = [];
+      var done = false;
+      var totalChunks = chunks.length;
+
+      // ★ 连接超时：15 秒（批量模式需要更长时间）
+      var connectTimeout = setTimeout(function() {
+        if (!done) {
+          done = true;
+          try { ws.close(); } catch(e) {}
+          // 如果已经拿到部分音频，返回部分结果
+          if (allAudioParts.length > 0) resolve(allAudioParts);
+          else reject(new Error('Edge TTS batch 连接超时'));
+        }
+      }, 15000);
+
+      try {
+        ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = function() {
+          clearTimeout(connectTimeout);
+          // 发送 speech.config（只发一次）
+          var ts = new Date().toISOString().replace(/\.\d{3}/, '');
+          ws.send(
+            'X-Timestamp:' + ts + '\r\n' +
+            'Content-Type:application/json; charset=utf-8\r\n' +
+            'Path:speech.config\r\n' +
+            '\r\n' +
+            '{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}'
+          );
+          // 开始发第一段
+          sendNextChunk();
+        };
+
+        function sendNextChunk() {
+          if (done) return;
+          if (currentChunkIdx >= totalChunks) {
+            // 所有段都处理完了，关闭连接
+            done = true;
+            try { ws.close(); } catch(e) {}
+            resolve(allAudioParts);
+            return;
+          }
+          currentAudioChunks = [];
+          var ts = new Date().toISOString().replace(/\.\d{3}/, '');
+          var rid = edgeUUID();
+          var ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-CN">' +
+            '<voice name="' + voice + '">' +
+            '<prosody rate="+5%" pitch="+0Hz">' + escapeXml(chunks[currentChunkIdx]) + '</prosody>' +
+            '</voice></speak>';
+
+          ws.send(
+            'X-RequestId:' + rid + '\r\n' +
+            'Content-Type:application/ssml+xml\r\n' +
+            'X-Timestamp:' + ts + '\r\n' +
+            'Path:ssml\r\n' +
+            '\r\n' +
+            ssml
+          );
+        }
+
+        ws.onmessage = function(e) {
+          if (done) return;
+          if (typeof e.data === 'string') {
+            if (e.data.indexOf('Path:turn.end') !== -1) {
+              // 当前段完成，保存音频
+              if (currentAudioChunks.length > 0) {
+                try {
+                  allAudioParts.push(new Uint8Array(mergeBuffers(currentAudioChunks)));
+                } catch(ex) {
+                  logError('Edge-TTS', 'batch 段 ' + currentChunkIdx + ' 合并失败', ex.message);
+                }
+              } else {
+                // 某段可能为空文本/纯标点，Edge-TTS 不生成音频 — 正常跳过
+                console.warn('[Edge-TTS] batch 段 ' + currentChunkIdx + ' 无音频数据(跳过)');
+              }
+              currentChunkIdx++;
+              // 继续发下一段
+              sendNextChunk();
+            }
+          } else if (e.data instanceof ArrayBuffer) {
+            var buf = new Uint8Array(e.data);
+            var headerLen = (buf[0] << 8) | buf[1];
+            var audioData = buf.slice(2 + headerLen);
+            if (audioData.length > 0) currentAudioChunks.push(audioData);
+          }
+        };
+
+        ws.onerror = function() {
+          if (!done) {
+            done = true;
+            var diag = diagnoseEdgeTTS('batch WS onerror (段 ' + currentChunkIdx + '/' + totalChunks + ')');
+            // 如果已经拿到部分音频，返回部分结果而不是完全失败
+            if (allAudioParts.length > 0) {
+              logError('Edge-TTS', 'batch 部分成功', '已获取 ' + allAudioParts.length + '/' + totalChunks + ' 段');
+              resolve(allAudioParts);
+            } else {
+              reject(new Error('Edge TTS batch 连接失败 [' + diag + ']'));
+            }
+          }
+        };
+
+        ws.onclose = function(e) {
+          if (!done) {
+            done = true;
+            // 如果已经拿到部分音频，返回部分结果
+            if (allAudioParts.length > 0) {
+              resolve(allAudioParts);
+            } else {
+              var reason = 'code=' + e.code;
+              if (e.code === 1006) reason += '(网络问题)';
+              if (e.code === 1003) reason += '(403)';
+              reject(new Error('Edge TTS batch 关闭 ' + reason));
+            }
+          }
+        };
+      } catch(ex) { reject(ex); }
+    }).catch(function(err) {
+      reject(new Error('Edge TTS batch token 生成失败: ' + err.message));
+    });
+  });
+}
+
+// ★ 带重试的逐段生成（每段最多重试 3 次，段间延迟避免限流）
+async function edgeTTSGenerateWithRetry(text, voice, maxRetries) {
+  maxRetries = maxRetries || 3;
+  var lastError = null;
+  for (var attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      var result = await edgeTTSGenerateOnly(text, voice);
+      // ★ BUG FIX: 检查 null/空结果，也触发重试
+      if (!result || result.length === 0) {
+        throw new Error('Edge TTS gen 返回空音频数据');
+      }
+      return result;
+    } catch(e) {
+      lastError = e;
+      if (attempt < maxRetries - 1) {
+        var delay = 1000 * (attempt + 1); // 1s, 2s, 3s
+        logError('Edge-TTS', '重试第 ' + (attempt+1) + '/' + maxRetries + ' 次', (e && e.message) || String(e));
+        await new Promise(function(r) { setTimeout(r, delay); });
+      }
+    }
+  }
+  throw lastError || new Error('Edge TTS gen 重试全部失败');
+}
+
+/* ═══════════════════════════════════════════
+   火山引擎豆包 TTS 2.0（语音保存专用）
+   完全对齐 Talkify APK 的 SeedTts2Engine 实现
+   API: /api/v3/tts/unidirectional (NDJSON 流式 PCM)
+   ═══════════════════════════════════════════ */
+
+// ★ PCM 数据转 WAV（浏览器可播放/下载的格式）
+function pcmToWav(pcmData, sampleRate, numChannels, bitsPerSample) {
+  sampleRate = sampleRate || 24000;
+  numChannels = numChannels || 1;
+  bitsPerSample = bitsPerSample || 16;
+  var dataLength = pcmData.length;
+  var buffer = new ArrayBuffer(44 + dataLength);
+  var view = new DataView(buffer);
+  // RIFF header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  // fmt chunk
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);             // chunk size
+  view.setUint16(20, 1, true);              // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
+  view.setUint16(32, numChannels * (bitsPerSample / 8), true);
+  view.setUint16(34, bitsPerSample, true);
+  // data chunk
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+  // 写入 PCM 数据
+  var pcmArray = new Uint8Array(pcmData);
+  new Uint8Array(buffer).set(pcmArray, 44);
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, str) {
+  for (var i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+// ★ 调用火山引擎豆包 TTS 2.0 API
+// 支持两种模式：
+//   1. 代理模式（推荐）：通过 Cloudflare Worker 代理，解决浏览器 CORS 限制
+//   2. 直连模式：直接请求火山引擎（仅限非浏览器环境，浏览器会被 CORS 拦截）
+function callVolcanoTTS(text) {
+  return new Promise(function(resolve) {
+    if (!S.volcApiKey) {
+      resolve({ ok: false, error: '未配置豆包 API Key（在设置→豆包语音保存中填写）' });
+      return;
+    }
+
+    if (!text || !text.trim()) {
+      resolve({ ok: false, error: '文本为空' });
+      return;
+    }
+
+    var voiceId = S.volcVoice || 'zh_female_vv_uranus_bigtts';
+
+    // ══════════════════════════════════════
+    // ★ 模式 A：通过代理发送请求（推荐，解决 CORS）
+    // ══════════════════════════════════════
+    if (S.volcProxyUrl && S.volcProxyUrl.trim()) {
+      logError('豆包TTS', '代理模式', 'proxy=' + S.volcProxyUrl.substring(0, 40) + ', voice=' + voiceId + ', textLen=' + text.length);
+
+      fetch(S.volcProxyUrl.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: S.volcApiKey,
+          voice: voiceId,
+          text: text
+        })
+      }).then(function(resp) {
+        if (!resp.ok) {
+          return resp.text().then(function(bodyText) {
+            var errMsg = bodyText;
+            try { errMsg = JSON.parse(bodyText).error || bodyText; } catch(e) {}
+            resolve({ ok: false, error: '代理错误 ' + resp.status + ': ' + errMsg.substring(0, 200) });
+          });
+        }
+        // 代理返回的是 WAV 音频流
+        return resp.arrayBuffer().then(function(buf) {
+          if (!buf || buf.byteLength < 100) {
+            resolve({ ok: false, error: '代理返回数据异常（可能 API Key 无效）' });
+            return;
+          }
+          var wavBlob = new Blob([buf], { type: 'audio/wav' });
+          logError('豆包TTS', '代理成功', 'size=' + buf.byteLength + ' bytes');
+          resolve({ ok: true, blob: wavBlob, size: buf.byteLength });
+        });
+      }).catch(function(err) {
+        logError('豆包TTS', '代理网络异常', err.message);
+        resolve({ ok: false, error: '代理请求失败: ' + err.message });
+      });
+
+      return; // 代理模式到此结束
+    }
+
+    // ══════════════════════════════════════
+    // 模式 B：直连火山引擎（会触发 CORS，仅供 APK 环境使用）
+    // ══════════════════════════════════════
+    var reqBody = {
+      user: { uid: 'xinyu_user_' + Date.now() },
+      req_params: {
+        text: text,
+        speaker: voiceId,
+        audio_params: {
+          format: 'pcm',
+          sample_rate: 24000,
+          speech_rate: 0,
+          loudness_rate: 0
+        },
+        additions: JSON.stringify({
+          explicit_language: 'zh',
+          disable_markdown_filter: true
+        })
+      }
+    };
+
+    logError('豆包TTS', '直连模式', 'voice=' + voiceId + ', textLen=' + text.length);
+
+    fetch('https://openspeech.bytedance.com/api/v3/tts/unidirectional', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': S.volcApiKey,
+        'X-Api-Resource-Id': 'seed-tts-2.0',
+        'Connection': 'keep-alive'
+      },
+      body: JSON.stringify(reqBody)
+    }).then(function(resp) {
+      logError('豆包TTS', 'HTTP状态', resp.status + ' ' + resp.statusText);
+
+      if (!resp.ok) {
+        return resp.text().then(function(bodyText) {
+          var errMsg = bodyText;
+          try { errMsg = JSON.parse(bodyText).message || bodyText; } catch(e) {}
+          resolve({ ok: false, error: 'HTTP ' + resp.status + ': ' + errMsg.substring(0, 200) });
+        }).catch(function() {
+          resolve({ ok: false, error: 'HTTP ' + resp.status + ': ' + resp.statusText });
+        });
+        return;
+      }
+
+      // 解析 NDJSON 流式响应
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var allPcmChunks = [];
+      var hasError = false;
+      var errorMsg = '';
+      var buf = '';
+
+      function pump() {
+        return reader.read().then(function(result) {
+          if (result.done) {
+            if (buf.trim()) processLine(buf.trim());
+            if (hasError) return { ok: false, error: errorMsg };
+            if (allPcmChunks.length === 0) return { ok: false, error: '未收到任何音频数据' };
+            var totalLen = 0;
+            for (var c = 0; c < allPcmChunks.length; c++) totalLen += allPcmChunks[c].length;
+            var merged = new Uint8Array(totalLen);
+              var offset = 0;
+              for (var d = 0; d < allPcmChunks.length; d++) {
+                merged.set(allPcmChunks[d], offset);
+                offset += allPcmChunks[d].length;
+              }
+            var wavBlob = pcmToWav(merged, 24000, 1, 16);
+            return { ok: true, blob: wavBlob, size: wavBlob.size };
+          }
+
+          buf += decoder.decode(result.value, { stream: true });
+          var lines = buf.split('\n');
+          buf = lines.pop();
+          for (var i = 0; i < lines.length; i++) {
+            var lineResult = processLine(lines[i].trim());
+            if (lineResult === 'error') hasError = true;
+          }
+
+          if (!hasError) return pump();
+          else return { ok: false, error: errorMsg };
+        });
+      }
+
+      function processLine(line) {
+        if (!line) return;
+        try {
+          var json = JSON.parse(line);
+          var code = json.code;
+
+          if (code === 0 && json.data) {
+            var binaryStr = atob(json.data);
+            var bytes = new Uint8Array(binaryStr.length);
+            for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+            allPcmChunks.push(bytes);
+            logError('豆包TTS', '收到音频', bytes.length + ' bytes');
+            return 'audio';
+          }
+
+          if (code === 0 && json.sentence) return;
+
+          if (code === 20000000) {
+            logError('豆包TTS', '合成完成', 'usage=' + JSON.stringify(json.usage || {}));
+            return;
+          }
+
+          if (code > 0 && code !== 20000000) {
+            errorMsg = json.message || ('错误码 ' + code);
+            logError('豆包TTS', 'API错误', 'code=' + code + ', msg=' + errorMsg);
+            hasError = true;
+            return 'error';
+          }
+        } catch(e) {
+          logError('豆包TTS', '解析行失败', line.substring(0, 80));
+        }
+      }
+
+      return pump().then(function(result) { resolve(result); });
+
+    }).catch(function(err) {
+      logError('豆包TTS', '网络异常', err.message || String(err));
+      resolve({ ok: false, error: '请求失败: ' + (err.message || 'CORS 被拦截或网络不可达') });
+    });
+  });
+}
+
+// ★ 用火山引擎豆包 TTS 生成长文本（自动分段拼接）
+async function generateVolcanoTTSFull(text) {
+  var chunks = splitIntoChunks(text, 300); // Talkify: MAX_TEXT_LENGTH = 300
+  var allParts = [];
+
+  for (var i = 0; i < chunks.length; i++) {
+    showToast('\u{1F525} 正在生成豆包语音\u2026 (' + (i+1) + '/' + chunks.length + ')');
+    var result = await callVolcanoTTS(chunks[i]);
+    if (!result.ok) throw new Error(result.error + ' (段' + (i+1) + ')');
+    allParts.push(result.blob);
+    // 段间等待避免限流
+    if (i < chunks.length - 1) await new Promise(function(r) { setTimeout(r, 300); });
+  }
+
+  if (allParts.length === 0) throw new Error('未生成任何音频');
+  // 所有段都是 WAV，直接拼接
+  return new Blob(allParts, { type: 'audio/wav' });
+}
+
+async function generateAndSaveEdgeAudio(text, speakBtn) {
+  var chunks = splitIntoChunks(text, 200);
+  var wrap = speakBtn ? speakBtn.closest('.bubble-wrap') : null;
+  var retainHidx = wrap ? parseInt(wrap.dataset.hidx) : -1;
+  if (retainHidx < 0) return;
+
+  // ═════════════════════════════════════
+  // ★ 优先尝试火山引擎豆包 TTS（如果已配置）
+  // 只有豆包才能保存出真正的 Talkify 同款声音
+  // ═════════════════════════════════════
+  if (S.volcApiKey && S.volcProxyUrl && S.volcProxyUrl.trim()) {
+    showToast('\u{1F525} 正在用豆包引擎生成语音…');
+    try {
+      var volcBlob = await generateVolcanoTTSFull(text);
+      if (volcBlob && volcBlob.size > 100) {
+        var retainUrl = URL.createObjectURL(volcBlob);
+        retainedAudios[retainHidx] = new Audio(retainUrl);
+        if (speakBtn) { speakBtn.textContent = '\u{1F504}'; speakBtn.title = '重播'; }
+        var fileName = generateAudioFileName(text);
+        var dlUrl = URL.createObjectURL(volcBlob);
+        var a = document.createElement('a');
+        a.href = dlUrl; a.download = fileName; a.style.display = 'none';
+        document.body.appendChild(a); a.click();
+        setTimeout(function() { try { URL.revokeObjectURL(dlUrl); } catch(e) {}
+                          try { document.body.removeChild(a); } catch(e) {} }, 3000);
+
+        logError('语音保存', '火山引擎豆包 TTS 成功', fileName + ' (' + Math.round(volcBlob.size/1024) + 'KB)');
+        showToast('\u{1F4BE} 豆包语音已保存：' + fileName);
+        return; // ★ 成功，直接返回，不再走 Edge-TTS
+      }
+    } catch(volcErr) {
+      logError('语音保存', '火山引擎豆包失败，回退Edge-TTS', (volcErr && volcErr.message) || String(volcErr));
+      showToast('\u26A0FE0F 豆包引擎失败，自动切换到微软语音…');
+      // 不 return，继续走下方 Edge-TTS 回退逻辑
+    }
+  }
+
+  // 注意：content:// 环境下也可能尝试 Edge-TTS（作为无原生桥时的回退方案）
+  // 不再强制阻止，让实际连接结果决定成败
+
+  showToast('⏳ 正在生成语音文件...');
+
+  var allAudioParts = [];
+  var batchFailed = false;
+
+  // ★ 优先尝试单连接批量模式（避免大量连接被限流）
+  try {
+    allAudioParts = await edgeTTSGenerateBatch(chunks, S.edgeVoice);
+    if (allAudioParts.length === 0) {
+      batchFailed = true;
+      logError('语音保存', 'batch 模式返回空（连接成功但未收到音频数据）', 'chunks=' + chunks.length);
+    } else if (allAudioParts.length < chunks.length) {
+      logError('语音保存', 'batch 部分成功', allAudioParts.length + '/' + chunks.length + ' 段');
+    } else {
+      logError('语音保存', 'batch 模式成功', allAudioParts.length + '/' + chunks.length + ' 段');
+    }
+  } catch(e) {
+    batchFailed = true;
+    logError('语音保存', 'batch 模式失败，回退逐段重试', (e && e.message) || String(e));
+  }
+
+  // ★ batch 失败时，回退到逐段重试模式
+  if (batchFailed) {
+    allAudioParts = [];
+    var genErrors = 0;
+    var lastGenError = '';
+    for (var i = 0; i < chunks.length; i++) {
+      try {
+        var audioData = await edgeTTSGenerateWithRetry(chunks[i], S.edgeVoice, 3);
+        if (audioData) allAudioParts.push(audioData);
+        // ★ 段间等待 800ms，避免服务器限流
+        if (i < chunks.length - 1) {
+          await new Promise(function(r) { setTimeout(r, 800); });
+        }
+      }
+      catch(e) {
+        genErrors++;
+        lastGenError = (e && e.message) || String(e) || '未知';
+        logError('Edge-TTS', '保存段 ' + (i+1) + '/' + chunks.length + ' 失败(重试3次)', lastGenError);
+      }
+    }
+  }
+
+  // ★ Edge-TTS 全部失败时，尝试 HTTP TTS 作为最终回退
+  if (allAudioParts.length === 0) {
+    logError('语音保存', 'Edge-TTS 全部失败，尝试 HTTP TTS 回退', 'errors=' + genErrors);
+    try {
+      var httpAudio = await generateAndSaveHTTPTTS(text);
+      if (httpAudio) {
+        // HTTP TTS 成功了，httpAudio 已处理保存逻辑
+        return;
+      }
+    } catch(httpErr) {
+      logError('语音保存', 'HTTP TTS 也失败', (httpErr && httpErr.message) || String(httpErr));
+    }
+  }
+
+  // ★ 全部失败时提示用户
+  if (allAudioParts.length === 0) {
+    var diagInfo = lastGenError || '未知错误';
+    var shortDiag = '';
+    if (diagInfo.indexOf('连接超时') !== -1) shortDiag = '连接超时';
+    else if (diagInfo.indexOf('403') !== -1) shortDiag = '403 被拒绝';
+    else if (diagInfo.indexOf('无音频数据') !== -1) shortDiag = '服务端未合成音频';
+    else if (diagInfo.indexOf('token 生成失败') !== -1) shortDiag = '安全验证失败';
+    else if (diagInfo.indexOf('网络问题') !== -1) shortDiag = '网络连接中断';
+    else if (diagInfo.indexOf('空音频') !== -1) shortDiag = '音频数据为空';
+    else shortDiag = '连接失败（详见日志）';
+    showToast('❌ 语音保存失败：' + shortDiag);
+    logError('语音保存', '所有方式均失败', diagInfo);
+    return;
+  }
+
+  if (allAudioParts.length < chunks.length) {
+    showToast('⚠️ 语音部分保存（' + allAudioParts.length + '/' + chunks.length + ' 段成功）');
+  }
+
+  if (allAudioParts.length > 0) {
+    var fullBlob = new Blob(allAudioParts, { type: 'audio/mpeg' });
+
+    // 内存留存（用于重播）
+    var retainUrl = URL.createObjectURL(fullBlob);
+    retainedAudios[retainHidx] = new Audio(retainUrl);
+
+    // 更新按钮图标
+    if (speakBtn) {
+      speakBtn.textContent = '\u{1F504}';
+      speakBtn.title = '重播';
+    }
+
+    // ★ 根据聊天内容生成文件名
+    var fileName = generateAudioFileName(text);
+
+    // 触发浏览器下载（不依赖原生桥接）
+    var dlUrl = URL.createObjectURL(fullBlob);
+    var a = document.createElement('a');
+    a.href = dlUrl;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { try { URL.revokeObjectURL(dlUrl); } catch(e) {}
+                      try { document.body.removeChild(a); } catch(e) {} }, 3000);
+
+    showToast('\u{1F4BE} \u8BED\u97F3\u5DF2\u4FDD\u5B58\uFF1A' + fileName);
+  }
+}
+
+// 只生成 Edge-TTS 音频数据（不播放），返回 Uint8Array
+function edgeTTSGenerateOnly(text, voice) {
+  voice = voice || 'zh-CN-XiaoxiaoNeural';
+
+  return new Promise(function(resolve, reject) {
+    // ★ 先异步生成 Sec-MS-GEC token，再创建 WebSocket
+    buildEdgeTTSWsUrl().then(function(wsUrl) {
+      try {
+        var ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
+        var audioChunks = [];
+        var done = false;
+
+        // ★ 连接超时保护
+        var connectTimeout = setTimeout(function() {
+          if (!done) {
+            done = true;
+            try { ws.close(); } catch(e) {}
+            reject(new Error('Edge TTS gen 连接超时'));
+          }
+        }, 8000);
+
+        ws.onopen = function() {
+          clearTimeout(connectTimeout);
+          var ts = new Date().toISOString().replace(/\.\d{3}/, '');
+          ws.send(
+            'X-Timestamp:' + ts + '\r\n' +
+            'Content-Type:application/json; charset=utf-8\r\n' +
+            'Path:speech.config\r\n' +
+            '\r\n' +
+            '{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}'
+          );
+
+          var rid = edgeUUID();
+          var ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-CN">' +
+            '<voice name="' + voice + '">' +
+            '<prosody rate="+5%" pitch="+0Hz">' + escapeXml(text) + '</prosody>' +
+            '</voice></speak>';
+
+          ws.send(
+            'X-RequestId:' + rid + '\r\n' +
+            'Content-Type:application/ssml+xml\r\n' +
+            'X-Timestamp:' + ts + '\r\n' +
+            'Path:ssml\r\n' +
+            '\r\n' +
+            ssml
+          );
+        };
+
+        ws.onmessage = function(e) {
+          if (done) return;
+          if (typeof e.data === 'string') {
+            if (e.data.indexOf('Path:turn.end') !== -1) {
+              done = true;
+              ws.close();
+              // ★ BUG FIX: 没有音频数据时 reject（而非 resolve null），让重试机制正常工作
+              if (audioChunks.length > 0) {
+                try {
+                  resolve(new Uint8Array(mergeBuffers(audioChunks)));
+                } catch(ex) {
+                  reject(new Error('Edge TTS gen 音频合并失败: ' + ex.message));
+                }
+              } else {
+                reject(new Error('Edge TTS gen 收到 turn.end 但无音频数据（服务端未合成）'));
+              }
+            }
+          } else if (e.data instanceof ArrayBuffer) {
+            var buf = new Uint8Array(e.data);
+            var headerLen = (buf[0] << 8) | buf[1];
+            var audioData = buf.slice(2 + headerLen);
+            if (audioData.length > 0) audioChunks.push(audioData);
+          }
+        };
+
+        ws.onerror = function() { clearTimeout(connectTimeout); if (!done) { done = true; var diag = diagnoseEdgeTTS('gen WS onerror (readyState=' + ws.readyState + ')'); reject(new Error('Edge TTS gen 连接失败 [' + diag + ']')); } };
+        ws.onclose = function(e) { clearTimeout(connectTimeout); if (!done) { done = true; var reason = 'code=' + e.code; if (e.code === 1006) reason += '(异常关闭/网络问题)'; if (e.code === 1003) reason += '(403拒绝)'; if (e.code === 1008) reason += '(策略违反)'; if (e.code === 1001) reason += '(服务器关闭)'; logError('Edge-TTS', 'gen WS onclose', reason); reject(new Error('Edge TTS gen 关闭 ' + reason)); } };
+      } catch(ex) { reject(ex); }
+    }).catch(function(err) {
+      reject(new Error('Edge TTS gen token 生成失败: ' + err.message));
+    });
+  });
+}
+
+function stopSpeaking() {
+  clearTimeout(ttsChunkTimer);
+  clearTimeout(nativeTTSWatchdog);
+  ttsChunkDone = false;
+  ttsQueue = [];
+  edgeTTSRemainingChunks = [];
+  if (edgeTTSAudio) { edgeTTSAudio.pause(); edgeTTSAudio = null; }
+  if (edgeTTSWs) { try { edgeTTSWs.close(); } catch(e) {} edgeTTSWs = null; }
+  if (hasNativeTTS && window.__nativeTTS__) window.__nativeTTS__.stop();
+  if (speechSynth) speechSynth.cancel();
+
+  // 停止留存音频的播放（但不清除留存引用，以便重播）
+  for (var k in retainedAudios) {
+    try { if (retainedAudios[k] && typeof retainedAudios[k].pause === 'function') retainedAudios[k].pause(); } catch(e) {}
+  }
+
+  ttsUtterance = null;
+  isSpeaking = false;
+  if (ttsActiveSpeakBtn) {
+    ttsActiveSpeakBtn.textContent = '\u{1F50A}';
+    ttsActiveSpeakBtn.classList.remove('playing');
+    ttsActiveSpeakBtn = null;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   通用工具函数
+   ═══════════════════════════════════════════ */
+
+function setInputEnabled(e) {
+  document.getElementById('userInput').disabled = !e;
+  document.getElementById('sendBtn').disabled = !e;
+  document.getElementById('stopBtn').classList.toggle('visible', !e);
+}
+
+function hideWelcome() {
+  var w = document.getElementById('welcomeMsg');
+  if (w) w.style.display = 'none';
+  var s = document.getElementById('suggestions');
+  if (s) s.style.display = 'none';
+}
+
+function updateTurnCounter() {
+  var el = document.getElementById('turnCounter');
+  var lb = document.getElementById('modelLabel');
+  if (lb) lb.textContent = S.model;
+  el.textContent = turnCount > 0 ? '对话 ' + turnCount + ' 轮 | ' + S.model : S.model;
+}
+
+function scrollToBottom() {
+  var a = document.getElementById('chatArea');
+  setTimeout(function() { a.scrollTop = a.scrollHeight; }, 30);
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showToast(msg) {
+  var e = document.querySelector('.toast');
+  if (e) e.remove();
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 2600);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function saveHistory() {
+  localStorage.setItem('xinyu_history', JSON.stringify(history.slice(-50)));
+}
+
+function saveSettings() {
+  S.apiUrl = document.getElementById('setApiUrl').value.trim() || DEFAULTS.apiUrl;
+  S.apiKey = document.getElementById('setApiKey').value || '';
+  S.system = document.getElementById('setSystem').value || DEFAULTS.system;
+  S.background = document.getElementById('setBackground').value || '';
+  S.edgeVoice = document.getElementById('setEdgeVoice').value || DEFAULTS.edgeVoice;
+  var retainPathInput = document.getElementById('setRetainPath');
+  if (retainPathInput) S.retainPath = retainPathInput.value.trim();
+  // 火山引擎豆包 TTS
+  S.volcApiKey = document.getElementById('setVolcApiKey').value.trim();
+  S.volcProxyUrl = document.getElementById('setVolcProxyUrl').value.trim();
+  S.volcVoice = document.getElementById('setVolcVoice').value || 'zh_female_vv_uranus_bigtts';
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function toggleTTSAuto() {
+  S.ttsAuto = !S.ttsAuto;
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function toggleTTSReadReasoning() {
+  S.ttsReadReasoning = !S.ttsReadReasoning;
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function toggleTTSRetain() {
+  S.ttsRetain = !S.ttsRetain;
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function selectTTSMode(btn) {
+  S.ttsMode = btn.dataset.tts;
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function selectModel(btn) {
+  S.model = btn.dataset.model;
+  localStorage.setItem('xinyu_settings', JSON.stringify(S));
+  applySettings();
+}
+
+function testTTS() {
+  speakText('你好，我是心语 AI 陪伴助手，这是我的声音测试。');
+}
+
+/* ═══ Edge-TTS 连接诊断测试 ═══ */
+async function testEdgeTTSConnection() {
+  showToast('🔍 正在测试 Edge-TTS 连接...');
+  var results = [];
+
+  // 1. 检查 crypto.subtle 可用性
+  var hasSubtle = typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function';
+  results.push('crypto.subtle: ' + (hasSubtle ? '可用' : '不可用(非HTTPS?)'));
+  results.push('纯JS SHA-256: 可用');
+
+  // 2. 测试 Sec-MS-GEC 生成
+  try {
+    var secMsGec = await generateSecMsGec();
+    results.push('Sec-MS-GEC: 生成成功(' + secMsGec.substring(0, 8) + '...)');
+  } catch(e) {
+    results.push('Sec-MS-GEC: 失败(' + e.message + ')');
+  }
+
+  // 3. 测试 WebSocket 连接
+  try {
+    var wsUrl = await buildEdgeTTSWsUrl();
+    results.push('WebSocket URL: 构建成功');
+    var testResult = await new Promise(function(resolve, reject) {
+      var ws = new WebSocket(wsUrl);
+      ws.binaryType = 'arraybuffer';
+      var timeout = setTimeout(function() {
+        try { ws.close(); } catch(e) {}
+        resolve('连接超时(8秒)');
+      }, 8000);
+      ws.onopen = function() {
+        clearTimeout(timeout);
+        try { ws.close(); } catch(e) {}
+        resolve('连接成功!');
+      };
+      ws.onerror = function() {
+        clearTimeout(timeout);
+        resolve('连接失败(网络/WAF)');
+      };
+      ws.onclose = function(e) {
+        clearTimeout(timeout);
+        resolve('关闭 code=' + e.code + (e.code === 1006 ? '(网络不通)' : e.code === 1003 ? '(403拒绝)' : ''));
+      };
+    });
+    results.push('连接测试: ' + testResult);
+  } catch(e) {
+    results.push('连接测试: 异常(' + e.message + ')');
+  }
+
+  // 4. 环境信息
+  results.push('协议: ' + location.protocol);
+  results.push('UA: ' + navigator.userAgent.substring(0, 60));
+
+  var report = results.join('\n');
+  console.log('[Edge-TTS 诊断报告]\n' + report);
+
+  // ★ 写入错误日志
+  logError('Edge-TTS诊断', '连接测试结果', report);
+
+  // 用 alert 显示完整诊断（手机上最容易看到）
+  alert('Edge-TTS 连接诊断报告:\n\n' + report);
+}
+
+// ★ 综合语音保存诊断：测试所有可用方式
+async function testTTSSave() {
+  showToast('🔍 正在测试语音保存能力...');
+  var results = [];
+
+  results.push('═══ 语音保存诊断 ═══');
+  results.push('协议: ' + location.protocol);
+  results.push('原生TTS: ' + (hasNativeTTS ? '有' : '无'));
+  results.push('');
+
+  // 1. 测试 Edge-TTS WebSocket
+  results.push('── Edge-TTS WebSocket ──');
+  try {
+    var wsUrl = await buildEdgeTTSWsUrl();
+    var wsResult = await new Promise(function(resolve) {
+      var ws = new WebSocket(wsUrl);
+      ws.binaryType = 'arraybuffer';
+      var timeout = setTimeout(function() { try { ws.close(); } catch(e) {} resolve('连接超时'); }, 8000);
+      ws.onopen = function() {
+        clearTimeout(timeout);
+        // 发送 speech.config + 短文本 SSML，看能否收到音频
+        var ts = new Date().toISOString().replace(/\.\d{3}/, '');
+        ws.send('X-Timestamp:' + ts + '\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n' +
+          '{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}');
+        var ssml = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="+5%">测试</prosody></voice></speak>';
+        ws.send('X-RequestId:test\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:' + ts + '\r\nPath:ssml\r\n\r\n' + ssml);
+        var audioSize = 0;
+        var dataTimeout = setTimeout(function() {
+          try { ws.close(); } catch(e) {}
+          resolve('连接成功，收到 ' + audioSize + 'B 音频数据');
+        }, 5000);
+        ws.onmessage = function(e) {
+          if (typeof e.data === 'string' && e.data.indexOf('Path:turn.end') !== -1) {
+            clearTimeout(dataTimeout);
+            try { ws.close(); } catch(e) {}
+            resolve('✅ 连接+合成成功，收到 ' + audioSize + 'B');
+          } else if (e.data instanceof ArrayBuffer) {
+            var buf = new Uint8Array(e.data);
+            var hLen = (buf[0] << 8) | buf[1];
+            audioSize += buf.length - 2 - hLen;
+          }
+        };
+        ws.onerror = function() { clearTimeout(dataTimeout); resolve('❌ 连接后 onerror'); };
+        ws.onclose = function(e) { clearTimeout(dataTimeout); resolve('关闭 code=' + e.code); };
+      };
+      ws.onerror = function() { clearTimeout(timeout); resolve('❌ 连接失败'); };
+    });
+    results.push('结果: ' + wsResult);
+  } catch(e) {
+    results.push('结果: ❌ ' + ((e && e.message) || String(e)));
+  }
+
+  results.push('');
+
+  // 2. 测试 HTTP TTS (Google)
+  results.push('── HTTP TTS (Google) ──');
+  try {
+    var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent('测试');
+    var resp = await fetch(url, { method: 'GET', mode: 'cors' });
+    if (resp.ok) {
+      var blob = await resp.blob();
+      results.push('结果: ✅ HTTP 可用，音频 ' + blob.size + 'B (' + blob.type + ')');
+    } else {
+      results.push('结果: ❌ HTTP 返回 ' + resp.status);
+    }
+  } catch(e) {
+    var errMsg = (e && e.message) || String(e);
+    results.push('结果: ❌ ' + errMsg);
+    if (errMsg.indexOf('Failed to fetch') !== -1 || errMsg.indexOf('NetworkError') !== -1) {
+      results.push('原因: CORS 阻止或网络不通（content:// 协议限制）');
+    }
+  }
+
+  results.push('');
+
+  // 3. 测试浏览器下载能力
+  results.push('── 浏览器下载能力 ──');
+  try {
+    var testBlob = new Blob([new Uint8Array([0xFF, 0xFB, 0x90, 0x00])], { type: 'audio/mpeg' });
+    var testUrl = URL.createObjectURL(testBlob);
+    var testA = document.createElement('a');
+    testA.href = testUrl;
+    testA.download = 'test.mp3';
+    results.push('Blob + <a download>: 可用（会触发下载）');
+    URL.revokeObjectURL(testUrl);
+  } catch(e) {
+    results.push('Blob + <a download>: 不可用 (' + e.message + ')');
+  }
+
+  results.push('');
+  results.push('═══ 诊断结束 ═══');
+
+  var report = results.join('\n');
+  logError('语音保存诊断', '综合测试结果', report);
+  alert('语音保存诊断报告:\n\n' + report);
+}
+
+/* ═══════════════════════════════════════════
+   测试火山引擎豆包 TTS
+   ═══════════════════════════════════════════ */
+async function testVolcTTS() {
+  var btn = document.getElementById('testVolcBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 测试中…'; }
+
+  if (!S.volcApiKey) {
+    alert('⚠️ 请先填写豆包 API Key（在火山引擎控制台→语音技术→获取API Key）');
+    if (btn) { btn.disabled = false; btn.textContent = '🫘 测试豆包语音保存'; }
+    return;
+  }
+
+  if (!S.volcProxyUrl || !S.volcProxyUrl.trim()) {
+    alert('⚠️ 请先填写代理URL！\n\n浏览器无法直接请求火山引擎，必须通过代理。\n\n请部署 tts-proxy-worker.js 到 Cloudflare Workers 后填入地址。');
+    if (btn) { btn.disabled = false; btn.textContent = '🫘 测试豆包语音保存'; }
+    return;
+  }
+
+  showToast('🫘 正在测试豆包 TTS 连接…');
+  try {
+    var result = await callVolcanoTTS('你好，这是一段豆包语音测试。如果你能听到这个声音，说明火山引擎配置正确！');
+    if (result.ok) {
+      // 自动下载测试音频
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(result.blob);
+      a.download = '豆包语音测试.wav';
+      document.body.appendChild(a); a.click(); setTimeout(function() { document.body.removeChild(a); }, 2000);
+
+      logError('豆包TTS测试', '成功', 'size=' + Math.round(result.size/1024) + 'KB');
+      alert('\u2705 豆包语音测试成功！\n\n文件大小: ' + Math.round(result.size/1024) + ' KB\n已自动下载到手机\n\n如果播放正常，说明配置完全正确 \u{1F389}');
+      showToast('\u2705 豆包语音测试成功！');
+    } else {
+      logError('豆包TTS测试', '失败', result.error);
+      alert('\u274C 豆包语音测试失败:\n\n' + result.error + '\n\n可能原因:\n1. AppID 或 Token 填写错误\n2. Token 已过期或余额不足\n3. 网络连接问题');
+      showToast('\u274C 豆包测试失败: ' + result.error.substring(0, 30));
+    }
+  } catch(e) {
+    logError('豆包TTS测试', '异常', e.message);
+    alert('\u274C 测试异常: ' + e.message);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🫘 测试豆包语音保存'; }
+}
+
+function estimateTokens(text) {
+  if (!text) return 0;
+  var cn = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+  var en = (text.match(/[a-zA-Z]+/g) || []).length;
+  var other = text.length - cn - en;
+  return Math.ceil(cn * 1.5 + en * 1.3 + other * 0.8);
+}
+
+function getContextStats() {
+  var ht = estimateTokens(JSON.stringify(history));
+  var st = estimateTokens(summary || '');
+  var ss = estimateTokens(S.system) + estimateTokens(S.background);
+  return {
+    historyCount: history.length, turnCount: turnCount,
+    histTokens: ht, sumTokens: st, sysTokens: ss,
+    totalTokens: ht + st + ss, compressed: !!summary
+  };
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  var h = String(d.getHours()).padStart(2, '0');
+  var m = String(d.getMinutes()).padStart(2, '0');
+  return h + ':' + m;
+}
+
+/* ═══════════════════════════════════════════
+   气泡渲染
+   ═══════════════════════════════════════════ */
+
+function appendBubble(text, who, hidx, streaming, reasoningText) {
+  var area = document.getElementById('chatArea');
+  hideWelcome();
+
+  var wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ' + who;
+  wrap.setAttribute('data-hidx', hidx);
+
+  var avatar = document.createElement('div');
+  avatar.className = 'avatar ' + who;
+  avatar.textContent = who === 'ai' ? '\u{1F916}' : '\u{1F60A}';
+
+  var right = document.createElement('div');
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble ' + who;
+
+  // 思考过程（折叠展示）
+  var reasoningHtml = '';
+  if (who === 'ai' && reasoningText) {
+    reasoningHtml = '<details class="reasoning-block"><summary>\u{1F9E0} 思考过程</summary><pre class="reasoning-content">' + escapeHtml(reasoningText) + '</pre></details>';
+  }
+
+  // AI 消息用 Markdown 渲染，用户消息保持纯文本
+  var contentHtml;
+  if (who === 'ai' && !streaming) {
+    contentHtml = renderMarkdown(text);
+  } else if (who === 'ai' && streaming) {
+    contentHtml = renderMarkdown(text) + '<span class="cursor"></span>';
+  } else {
+    contentHtml = escapeHtml(text) + (streaming ? '<span class="cursor"></span>' : '');
+  }
+
+  bubble.innerHTML = reasoningHtml + contentHtml;
+  right.appendChild(bubble);
+
+  // 时间戳
+  var msg = history[hidx];
+  if (msg && msg.ts) {
+    var timeEl = document.createElement('div');
+    timeEl.className = 'bubble-time';
+    timeEl.textContent = formatTime(msg.ts);
+    right.appendChild(timeEl);
+  }
+
+  // 操作按钮
+  var actions = document.createElement('div');
+  actions.className = 'bubble-actions';
+
+  if (who === 'ai') {
+    // 朗读按钮
+    var sb = document.createElement('button');
+    sb.className = 'speak-btn';
+    sb.textContent = (S.ttsRetain && retainedAudios[hidx]) ? '\u{1F504}' : (S.ttsRetain ? '\u{1F4BE}' : '\u{1F50A}');
+    sb.title = S.ttsRetain ? '朗读并保存' : '朗读';
+    sb.onclick = function() {
+      if (isSpeaking && ttsActiveSpeakBtn === sb) {
+        stopSpeaking();
+      } else {
+        var h = history[hidx];
+        var readText = h ? h.content : text;
+        if (h && h.reasoning && S.ttsReadReasoning) readText = '思考过程：' + h.reasoning + '。正式回答：' + h.content;
+        speakText(readText, sb);
+        // 播完后更新按钮图标为重播
+        var checkDone = setInterval(function() {
+          if (!isSpeaking || ttsActiveSpeakBtn !== sb) {
+            clearInterval(checkDone);
+            if (S.ttsRetain && retainedAudios[hidx]) {
+              sb.textContent = '\u{1F504}';
+              sb.title = '重播';
+            }
+          }
+        }, 500);
+      }
+    };
+    actions.appendChild(sb);
+
+    // 复制按钮
+    var cb = document.createElement('button');
+    cb.className = 'copy-btn';
+    cb.textContent = '\u{1F4CB}';
+    cb.title = '复制';
+    cb.onclick = function() {
+      copyMessage(hidx);
+    };
+    actions.appendChild(cb);
+
+    // 重新生成按钮
+    var rb = document.createElement('button');
+    rb.className = 'regen-btn';
+    rb.textContent = '\u{1F504}';
+    rb.title = '重新生成';
+    rb.onclick = function() {
+      regenerateResponse(hidx);
+    };
+    actions.appendChild(rb);
+  } else {
+    // 用户消息：编辑按钮
+    var eb = document.createElement('button');
+    eb.className = 'edit-btn';
+    eb.textContent = '\u270F\uFE0F';
+    eb.title = '编辑';
+    eb.onclick = function() { startEditMessage(wrap, hidx); };
+    actions.appendChild(eb);
+  }
+
+  // 删除按钮
+  var db = document.createElement('button');
+  db.className = 'del-btn';
+  db.textContent = '\u{1F5D1}\uFE0F';
+  db.title = '删除';
+  db.onclick = function() { deleteMessage(wrap, hidx); };
+  actions.appendChild(db);
+
+  right.appendChild(actions);
+  wrap.appendChild(avatar);
+  wrap.appendChild(right);
+  area.appendChild(wrap);
+  scrollToBottom();
+  return wrap;
+}
+
+function getBubbleByHidx(hidx) {
+  return document.querySelector('.bubble-wrap[data-hidx="' + hidx + '"] .bubble');
+}
+
+function updateBubbleByIndex(hidx, text, reasoningText, streaming) {
+  var el = getBubbleByHidx(hidx);
+  if (!el) return;
+
+  var reasoningHtml = '';
+  if (reasoningText) {
+    reasoningHtml = '<details class="reasoning-block"><summary>\u{1F9E0} 思考过程</summary><pre class="reasoning-content">' + escapeHtml(reasoningText) + '</pre></details>';
+  }
+
+  // 流式更新时也用 Markdown 渲染（让用户看到格式化效果）
+  var contentHtml;
+  if (streaming) {
+    contentHtml = renderMarkdown(text) + '<span class="cursor"></span>';
+  } else {
+    contentHtml = renderMarkdown(text);
+  }
+
+  el.innerHTML = reasoningHtml + contentHtml;
+}
+
+function reindexBubbles() {
+  document.querySelectorAll('.bubble-wrap').forEach(function(w, i) { w.setAttribute('data-hidx', i); });
+}
+
+function renderHistory() {
+  if (history.length === 0) return;
+  hideWelcome();
+  for (var i = 0; i < history.length; i++) {
+    var m = history[i];
+    appendBubble(m.content, m.role === 'user' ? 'me' : 'ai', i, false, m.reasoning || '');
+  }
+  updateTurnCounter();
+  scrollToBottom();
+}
+
+/* ═══════════════════════════════════════════
+   复制消息
+   ═══════════════════════════════════════════ */
+
+function copyMessage(hidx) {
+  var text = history[hidx] ? history[hidx].content : '';
+  if (!text) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('已复制到剪贴板');
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('已复制到剪贴板');
+  } catch(e) {
+    showToast('复制失败');
+  }
+  document.body.removeChild(ta);
+}
+
+/* ═══════════════════════════════════════════
+   重新生成回复
+   ═══════════════════════════════════════════ */
+
+async function regenerateResponse(aiIdx) {
+  if (isSending) return;
+  // 找到对应的用户消息
+  if (aiIdx <= 0 || history[aiIdx].role !== 'assistant') {
+    showToast('无法重新生成该消息');
+    return;
+  }
+  var userText = history[aiIdx - 1].content;
+
+  // 删除当前 AI 回复
+  history.splice(aiIdx, 1);
+  saveHistory();
+
+  // 删除 DOM 中的 AI 气泡
+  var aiWrap = document.querySelector('.bubble-wrap[data-hidx="' + aiIdx + '"]');
+  if (aiWrap) aiWrap.remove();
+
+  // 重新索引
+  reindexBubbles();
+  turnCount = Math.floor(history.length / 2);
+
+  // 重新发送
+  isSending = true;
+  setInputEnabled(false);
+
+  history.push({ role: 'assistant', content: '', ts: Date.now() });
+  var newAiIdx = history.length - 1;
+  appendBubble('', 'ai', newAiIdx, true);
+
+  try {
+    await streamChat(userText, newAiIdx);
+  } catch(e) {
+    history[newAiIdx].content = '出错了：' + e.message;
+    updateBubbleByIndex(newAiIdx, history[newAiIdx].content, '', false);
+  }
+
+  isSending = false;
+  setInputEnabled(true);
+  scrollToBottom();
+}
+
+/* ═══════════════════════════════════════════
+   编辑消息
+   ═══════════════════════════════════════════ */
+
+function startEditMessage(wrap, hidx) {
+  var bubble = wrap.querySelector('.bubble');
+  var origText = history[hidx].content;
+  if (bubble.classList.contains('editing')) return;
+
+  bubble.classList.add('editing');
+  bubble.innerHTML =
+    '<textarea>' + escapeHtml(origText) + '</textarea>' +
+    '<div class="edit-actions">' +
+    '<button class="e-cancel" onclick="cancelEditMessage(this,' + hidx + ')">取消</button>' +
+    '<button class="e-confirm" onclick="confirmEditMessage(this,' + hidx + ')">确认</button>' +
+    '</div>';
+
+  var ta = bubble.querySelector('textarea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+  autoResize(ta);
+  ta.onkeydown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmEditMessage(ta.parentElement.querySelector('.e-confirm'), hidx); }
+    if (e.key === 'Escape') { cancelEditMessage(ta.parentElement.querySelector('.e-cancel'), hidx); }
+  };
+  ta.oninput = function() { autoResize(ta); };
+}
+
+function cancelEditMessage(btn, hidx) {
+  var b = btn.closest('.bubble');
+  b.classList.remove('editing');
+  // AI 消息用 Markdown 渲染
+  if (history[hidx].role === 'assistant') {
+    b.innerHTML = renderMarkdown(history[hidx].content);
+  } else {
+    b.textContent = history[hidx].content;
+  }
+}
+
+function confirmEditMessage(btn, hidx) {
+  var b = btn.closest('.bubble');
+  var ta = b.querySelector('textarea');
+  var newText = ta.value.trim();
+  if (!newText || newText === history[hidx].content) { cancelEditMessage(btn, hidx); return; }
+  history[hidx].content = newText;
+  saveHistory();
+  b.classList.remove('editing');
+  if (history[hidx].role === 'assistant') {
+    b.innerHTML = renderMarkdown(newText);
+  } else {
+    b.textContent = newText;
+  }
+  updateMemoryUI();
+}
+
+/* ═══════════════════════════════════════════
+   删除消息
+   ═══════════════════════════════════════════ */
+
+function deleteMessage(wrap, hidx) {
+  if (!confirm('确定删除这条消息？\n（相邻的 AI/用户消息会一起删除）')) return;
+
+  var item = history[hidx];
+  var removeIndices = [hidx];
+  if (item.role === 'user' && hidx + 1 < history.length && history[hidx + 1].role === 'assistant') removeIndices.push(hidx + 1);
+  if (item.role === 'assistant' && hidx > 0 && history[hidx - 1].role === 'user') removeIndices.unshift(hidx - 1);
+
+  for (var i = 0; i < removeIndices.length; i++) {
+    var w = document.querySelector('.bubble-wrap[data-hidx="' + removeIndices[i] + '"]');
+    if (w) { w.style.transition = 'opacity 0.2s, transform 0.2s'; w.style.opacity = '0'; w.style.transform = 'scale(0.92)'; setTimeout(function(el) { if (el) el.remove(); }, 220, w); }
+  }
+
+  removeIndices.sort(function(a,b) { return b - a; });
+  for (var j = 0; j < removeIndices.length; j++) { history.splice(removeIndices[j], 1); }
+
+  reindexBubbles();
+  saveHistory();
+  turnCount = Math.floor(history.length / 2);
+  updateTurnCounter();
+
+  if (history.length < 6 && summary) { summary = ''; localStorage.removeItem('xinyu_summary'); }
+  updateMemoryUI();
+
+  if (history.length === 0) {
+    var area = document.getElementById('chatArea');
+    area.innerHTML = '<div class="welcome-msg" id="welcomeMsg"><span class="emoji">\u{1F49C}</span>对话已清空，随时重新开始 \u{1F4AC}</div>' +
+      '<div class="suggestions" id="suggestions">' +
+      QUICK_SUGGESTIONS.map(function(s) { return '<div class="suggest-chip" onclick="useSuggestion(\'' + escapeHtml(s) + '\')">' + s + '</div>'; }).join('') +
+      '</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   对话发送 & 流式响应
+   ═══════════════════════════════════════════ */
+
+async function sendMessage() {
+  var input = document.getElementById('userInput');
+  var text = input.value.trim();
+  if (!text || isSending) return;
+
+  input.value = ''; input.style.height = 'auto';
+  isSending = true;
+  setInputEnabled(false);
+
+  history.push({ role: 'user', content: text, ts: Date.now() });
+  var uIdx = history.length - 1;
+  appendBubble(text, 'me', uIdx);
+  turnCount = Math.floor(history.length / 2);
+  updateTurnCounter();
+  saveHistory();
+
+  history.push({ role: 'assistant', content: '', ts: Date.now() });
+  var aIdx = history.length - 1;
+  appendBubble('', 'ai', aIdx, true);
+  hideWelcome();
+
+  try {
+    await streamChat(text, aIdx);
+  } catch(e) {
+    if (e.name === 'AbortError') {
+      // 用户主动停止
+      if (!history[aIdx].content) {
+        history[aIdx].content = '（已停止生成）';
+        updateBubbleByIndex(aIdx, history[aIdx].content, '', false);
+      }
+    } else {
+      history[aIdx].content = '出错了：' + e.message;
+      updateBubbleByIndex(aIdx, history[aIdx].content, '', false);
+      logError('DeepSeek', '对话请求失败', e.message);
+    }
+  }
+
+  isSending = false;
+  setInputEnabled(true);
+  abortController = null;
+  scrollToBottom();
+}
+
+function stopGeneration() {
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+    showToast('已停止生成');
+  }
+}
+
+async function streamChat(userText, aiIndex) {
+  var key = S.apiKey;
+  if (!key) throw new Error('请先在设置中填写 API Key');
+
+  var messages = [];
+  var sysPrompt = S.system;
+  if (S.background) sysPrompt += '\n\n[用户背景]\n' + S.background;
+  if (summary) sysPrompt += '\n\n[对话记忆摘要]\n' + summary + '\n\n请结合摘要理解用户状态，但不要主动提及"摘要"。';
+  messages.push({ role: 'system', content: sysPrompt });
+
+  var recent = history.slice(-21);
+  for (var i = 0; i < recent.length; i++) {
+    if (recent[i].role === 'assistant' && !recent[i].content) continue;
+    messages.push({ role: recent[i].role, content: recent[i].content });
+  }
+
+  var isReasoner = S.model === 'deepseek-v4-pro';
+  var maxTok = isReasoner ? 8192 : 8192;
+  var body = { model: S.model, messages: messages, stream: true, temperature: 0.8, max_tokens: maxTok };
+  if (isReasoner) {
+    body.temperature = undefined; // R1 不支持 temperature
+  }
+
+  abortController = new AbortController();
+
+  var resp = await fetch(S.apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify(body),
+    signal: abortController.signal,
+  });
+
+  if (!resp.ok) {
+    var err = await resp.text();
+    logError('DeepSeek API', 'HTTP ' + resp.status, err.substring(0, 200));
+    throw new Error('API ' + resp.status + ': ' + err.substring(0, 120));
+  }
+
+  var reader = resp.body.getReader();
+  var decoder = new TextDecoder();
+  var fullText = '';
+  var reasoningText = '';
+  var lastRenderTime = 0;
+  var lineBuffer = '';
+  var streamTimer = null;
+
+  try {
+    streamTimer = setTimeout(function() { reader.cancel('stream timeout'); }, 60000);
+
+    while (true) {
+      var rd = await reader.read();
+      if (rd.done) break;
+      var chunk = decoder.decode(rd.value, { stream: true });
+      chunk = lineBuffer + chunk;
+      lineBuffer = '';
+      var rawLines = chunk.split('\n');
+      if (chunk.charAt(chunk.length - 1) !== '\n') {
+        lineBuffer = rawLines.pop();
+      }
+      for (var j = 0; j < rawLines.length; j++) {
+        var line = rawLines[j].trim();
+        if (!line || line === 'data: [DONE]' || line === 'data:[DONE]') continue;
+        var jsonStart = line.indexOf('{');
+        if (jsonStart < 0) continue;
+        try {
+          var data = JSON.parse(line.substring(jsonStart));
+          var delta = data.choices && data.choices[0] && data.choices[0].delta;
+          if (!delta) continue;
+
+          // R1 思考过程
+          if (delta.reasoning_content) {
+            reasoningText += delta.reasoning_content;
+            var now = Date.now();
+            if (now - lastRenderTime > 120) {
+              var displayText = fullText || '\u2026';
+              updateBubbleByIndex(aiIndex, displayText, reasoningText, true);
+              scrollToBottom();
+              lastRenderTime = now;
+            }
+          }
+
+          // 正式回复内容
+          if (delta.content) {
+            fullText += delta.content;
+            updateBubbleByIndex(aiIndex, fullText, reasoningText, true);
+            scrollToBottom();
+          }
+        } catch(e) {}
+      }
+    }
+
+    // ★ 关键修复：处理 lineBuffer 中残留的最后一段数据
+    if (lineBuffer.trim()) {
+      var remainLine = lineBuffer.trim();
+      if (remainLine && remainLine !== 'data: [DONE]' && remainLine !== 'data:[DONE]') {
+        var jsonIdx = remainLine.indexOf('{');
+        if (jsonIdx >= 0) {
+          try {
+            var remainData = JSON.parse(remainLine.substring(jsonIdx));
+            var remainDelta = remainData.choices && remainData.choices[0] && remainData.choices[0].delta;
+            if (remainDelta) {
+              if (remainDelta.reasoning_content) {
+                reasoningText += remainDelta.reasoning_content;
+              }
+              if (remainDelta.content) {
+                fullText += remainDelta.content;
+              }
+            }
+          } catch(e) {}
+        }
+      }
+    }
+  } finally {
+    clearTimeout(streamTimer);
+    var finalText = fullText || (history[aiIndex] ? history[aiIndex].content : '');
+    updateBubbleByIndex(aiIndex, finalText, reasoningText, false);
+  }
+
+  // 兜底：流式响应正文为空
+  if (!fullText) {
+    if (reasoningText) {
+      fullText = '（模型思考完毕但回答被截断，请重试。提示：可通过设置切换为 V3 模型避免此问题。）';
+      history[aiIndex].content = fullText;
+      updateBubbleByIndex(aiIndex, fullText, reasoningText, false);
+    } else {
+      try {
+        var fbBody = { model: S.model, messages: messages, stream: false, temperature: 0.8, max_tokens: 1024 };
+        var fbResp = await fetch(S.apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          body: JSON.stringify(fbBody),
+        });
+        if (fbResp.ok) {
+          var fbData = await fbResp.json();
+          fullText = fbData.choices[0].message.content;
+          updateBubbleByIndex(aiIndex, fullText, '', false);
+        } else {
+          fullText = '（流式响应失败，请检查网络或 API Key）';
+          updateBubbleByIndex(aiIndex, fullText, '', false);
+        }
+      } catch(fbErr) {
+        fullText = '（请求失败：' + fbErr.message + '）';
+        updateBubbleByIndex(aiIndex, fullText, '', false);
+      }
+    }
+  }
+
+  if (reasoningText) history[aiIndex].reasoning = reasoningText;
+  history[aiIndex].content = fullText;
+  turnCount = Math.floor(history.length / 2);
+  saveHistory();
+
+  if (S.ttsAuto && fullText) {
+    var autoSpeakBtn = document.querySelector('.bubble-wrap[data-hidx="' + aiIndex + '"] .speak-btn');
+    var autoReadText = fullText;
+    if (reasoningText && S.ttsReadReasoning) autoReadText = '思考过程：' + reasoningText + '。正式回答：' + fullText;
+    speakText(autoReadText, autoSpeakBtn);
+  }
+
+  // 自动压缩：每5轮触发一次，且至少有10条消息（避免过早频繁压缩）
+  if (turnCount >= 5 && turnCount % 5 === 0 && history.length >= 10) compressHistory();
+}
+
+/* ═══════════════════════════════════════════
+   对话压缩
+   ═══════════════════════════════════════════ */
+
+async function compressHistory(force) {
+  if (history.length < 6) return;
+  var keepRecent = force ? 4 : 8;   // force=手动保留2轮(4条), 自动=保留4轮(8条)
+  var toCompress = history.slice(0, -keepRecent);
+  if (toCompress.length < 4) return;
+
+  // 发送完整消息内容，让 DeepSeek 自己总结重点
+  var historyText = toCompress.map(function(m) {
+    return (m.role === 'user' ? '用户' : 'AI') + ': ' + (m.content || '');
+  }).join('\n');
+
+  // ★ 关键词锚定：从旧摘要中提取核心实体/关键词，强制要求新摘要必须包含
+  var anchorNote = '';
+  if (summary) {
+    // 用一个轻量提取步骤（同一次请求中通过 system prompt 指令实现）
+    anchorNote = '\n\n【⚠️ 旧摘要中的关键信息锚点 — 以下每一条都必须出现在你的新摘要中，不可遗漏】\n';
+    // 提取旧摘要中的关键句（按句号/逗号分段）
+    var sentences = summary.replace(/\n+/g, '。').split(/[。，！？；]/).filter(function(s) { return s.trim().length > 6; });
+    // 取最重要的句子作为锚点（最多15条）
+    var anchors = sentences.slice(-15);
+    for (var i = 0; i < anchors.length; i++) {
+      anchorNote += '✦ ' + anchors[i].trim() + '\n';
+    }
+  }
+
+  try {
+    var resp = await fetch(S.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.apiKey },
+      body: JSON.stringify({
+        model: 'deepseek-v4-flash',
+        messages: [
+          { role: 'system', content: [
+            '你是专业的对话记忆管家。你的唯一使命是：生成一份【绝对完整、绝不丢失信息】的累积式记忆摘要。',
+            '',
+            '【最高优先级 — 记忆完整性】',
+            '- 如果提供了"之前的摘要"和"关键信息锚点"，你必须将锚点中的**每一条**信息都准确反映在新摘要中',
+            '- 用户的名字、情绪状态、困扰、重要事件、个人背景、达成的共识、给过的建议 — 全部保留',
+            '- 宁可写长一些、详细一些，也绝不能为了简洁而丢弃任何关键信息',
+            '',
+            '【摘要结构建议（按以下顺序组织）】',
+            '1. 用户基本信息与当前状态',
+            '2. 核心困扰与情绪（必须包含所有历史提及的困扰，不只是最近的）',
+            '3. 已探讨的重要话题及结论（逐条列出）',
+            '4. 关键个人信息与背景',
+            '5. 已给出的建议与共识',
+            '6. 本次新对话的补充内容',
+            '',
+            '【格式要求】',
+            '- 输出一段完整的综合性摘要，不要用"更新:"、"追加:"等前缀',
+            '- 用中文第三人称叙述，语气温暖专业',
+            '- 字数不限，确保信息完整即可（通常 400-800 字）'
+          ].join('\n') },
+          { role: 'user', content: (summary ?
+            '【之前的完整摘要】\n' + summary +
+            anchorNote +
+            '\n\n【本次新增的对话记录（需要将其中重要信息融入上面的摘要）】\n' + historyText :
+            '【对话记录（首次生成摘要）】\n' + historyText
+          ) },
+        ],
+        stream: false, temperature: 0.1,
+      }),
+    });
+    if (resp.ok) {
+      var data = await resp.json();
+      var newSummary = data.choices[0].message.content.trim();
+
+      // ★ 内容校验：检查旧摘要中的关键句子是否在新摘要中有迹可循
+      if (summary) {
+        var missingCount = 0;
+        var checkSentences = summary.split(/[。，！？；\n]/).filter(function(s) { return s.trim().length > 10; });
+        for (var c = 0; c < Math.min(checkSentences.length, 10); c++) {
+          // 取句子的核心关键词（2字以上）检查是否出现在新摘要中
+          var words = checkSentences[c].trim().split(/[\s、，。：""''（）【】]/).filter(function(w) { return w.length >= 2; });
+          var found = false;
+          for (var w = 0; w < words.length; w++) {
+            if (newSummary.indexOf(words[w]) !== -1) { found = true; break; }
+          }
+          if (!found) missingCount++;
+        }
+        if (missingCount > checkSentences.length * 0.5) {
+          console.warn('[压缩] ⚠️ 新摘要可能遗漏了 ' + missingCount + '/' + checkSentences.length + ' 条历史信息');
+          if (force) showToast('⚠️ 部分历史记忆可能未保留，请检查并手动编辑摘要');
+        } else {
+          console.log('[压缩] ✓ 记忆校验通过，关键信息已保留');
+        }
+      }
+
+      var beforeLen = history.length;
+      // ★ 直接替换旧摘要
+      summary = newSummary;
+      localStorage.setItem('xinyu_summary', summary);
+      history = history.slice(-keepRecent);
+      saveHistory();
+      turnCount = Math.floor(history.length / 2);
+      updateTurnCounter();
+      updateMemoryUI();
+      showToast('已压缩 ' + (beforeLen - history.length) + ' 条消息，节省约 ' + estimateTokens(historyText) + ' tokens');
+    }
+  } catch(e) { console.warn('Summary failed:', e); if (force) showToast('压缩失败: ' + e.message); logError('记忆压缩', '压缩失败', e.message); }
+}
+
+async function manualCompress() {
+  if (history.length < 4) { alert('对话轮数太少，无需压缩'); return; }
+  if (!S.apiKey) { alert('请先在设置中填写 API Key'); return; }
+  var btn = document.querySelector('[onclick="manualCompress()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 正在压缩，请稍候…'; }
+  var beforeTokens = estimateTokens(JSON.stringify(history));
+  showToast('正在向 AI 请求生成记忆摘要…');
+  try {
+    await compressHistory(true);
+    var afterTokens = estimateTokens(JSON.stringify(history)) + estimateTokens(summary || '');
+    updateMemoryUI();
+    if (summary) showToast('✅ 压缩完成 | ' + beforeTokens + ' → ' + afterTokens + ' tokens');
+    else showToast('⚠️ 压缩未成功，请检查 API Key 或网络');
+  } catch(e) {
+    showToast('❌ 压缩失败: ' + e.message);
+    updateMemoryUI();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   记忆 UI
+   ═══════════════════════════════════════════ */
+
+function updateMemoryUI() {
+  var mc = document.getElementById('memoryContent');
+  if (!mc) return;
+  var stats = getContextStats();
+  var html = '';
+
+  html += '<div class="section-card" style="margin-bottom:12px;">' +
+    '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">上下文统计</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--text2);">' +
+    '<div>消息数：<b style="color:var(--text);">' + stats.historyCount + '</b></div>' +
+    '<div>对话轮：<b style="color:var(--text);">' + stats.turnCount + '</b></div>' +
+    '<div>系统提示：<b style="color:var(--text);">' + stats.sysTokens + ' tok</b></div>' +
+    '<div>历史消息：<b style="color:var(--text);">' + stats.histTokens + ' tok</b></div>' +
+    (stats.compressed ? '<div>摘要：<b style="color:var(--accent);">' + stats.sumTokens + ' tok</b></div>' : '') +
+    '<div style="font-weight:700;color:' + (stats.totalTokens > 8000 ? 'var(--danger)' : 'var(--success)') + ';">总计：' + stats.totalTokens + ' tok</div>' +
+    '</div>' +
+    (stats.totalTokens > 8000 ? '<div style="font-size:11px;color:var(--danger);margin-top:6px;">上下文较多，建议压缩以节省 token</div>' : '') +
+    (stats.totalTokens > 4000 && stats.totalTokens <= 8000 ? '<div style="font-size:11px;color:var(--warn);margin-top:6px;">上下文适中，可手动压缩优化</div>' : '') +
+    (stats.totalTokens <= 4000 && stats.historyCount > 0 ? '<div style="font-size:11px;color:var(--success);margin-top:6px;">上下文轻量，token 用量良好</div>' : '') +
+    '</div>';
+
+  if (history.length >= 4) {
+    html += '<button class="btn-outline" style="margin-bottom:12px;" onclick="manualCompress()">手动压缩上下文（节省 token）</button>';
+  }
+
+  if (summary) {
+    html += '<div class="memory-summary" id="summaryCard">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+        '<div style="font-size:12px;font-weight:700;">对话记忆摘要</div>' +
+        '<button onclick="startEditSummary()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;" id="editSummaryBtn">✏️ 编辑</button>' +
+      '</div>' +
+      '<div id="summaryTextView">' + escapeHtml(summary).replace(/\n/g, '<br>') + '</div>' +
+      '<div id="summaryEditArea" style="display:none;">' +
+        '<textarea class="memory-summary-edit" id="summaryTextarea">' + escapeHtml(summary) + '</textarea>' +
+        '<div class="summary-edit-btns">' +
+          '<button class="btn-save-summary" onclick="saveSummaryEdit()">保存</button>' +
+          '<button class="btn-cancel-summary" onclick="cancelSummaryEdit()">取消</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var recent = history.slice(-8);
+  if (recent.length > 0) {
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">最近对话</div>';
+  }
+  for (var i = 0; i < recent.length; i += 2) {
+    var u = recent[i];
+    var a = recent[i + 1];
+    if (u) {
+      html += '<div class="memory-item"><div class="memory-item-title">你 · ' + formatTime(u.ts) + '</div>' +
+        '<div class="memory-item-body">' + escapeHtml(u.content.substring(0, 80)) + (u.content.length > 80 ? '...' : '') + '</div></div>';
+    }
+    if (a) {
+      html += '<div class="memory-item" style="border-color:rgba(124,106,181,0.2);">' +
+        '<div class="memory-item-title" style="color:var(--accent);">心语</div>' +
+        '<div class="memory-item-body">' + escapeHtml(a.content.substring(0, 80)) + (a.content.length > 80 ? '...' : '') + '</div></div>';
+    }
+  }
+
+  if (!html) {
+    html = '<div style="text-align:center;color:var(--text2);font-size:13px;padding:30px 0;">暂无记忆<br><span style="font-size:11px;">开始对话后，这里会显示摘要和统计</span></div>';
+  }
+  mc.innerHTML = html;
+}
+
+// ── 摘要编辑功能 ──
+
+function startEditSummary() {
+  var textView = document.getElementById('summaryTextView');
+  var editArea = document.getElementById('summaryEditArea');
+  var btn = document.getElementById('editSummaryBtn');
+  var ta = document.getElementById('summaryTextarea');
+  if (!textView || !editArea) return;
+  // 用未转义的原始内容填充 textarea
+  ta.value = summary;
+  textView.style.display = 'none';
+  editArea.style.display = 'block';
+  btn.style.display = 'none';
+  ta.focus();
+  ta.setSelectionRange(0, 0);
+}
+
+function saveSummaryEdit() {
+  var ta = document.getElementById('summaryTextarea');
+  if (!ta) return;
+  var newVal = ta.value.trim();
+  if (!newVal) {
+    if (!confirm('摘要为空，是否删除记忆摘要？')) return;
+    summary = '';
+    localStorage.removeItem('xinyu_summary');
+  } else {
+    summary = newVal;
+    localStorage.setItem('xinyu_summary', summary);
+  }
+  updateMemoryUI();
+  showToast('✅ 摘要已保存');
+}
+
+function cancelSummaryEdit() {
+  var textView = document.getElementById('summaryTextView');
+  var editArea = document.getElementById('summaryEditArea');
+  var btn = document.getElementById('editSummaryBtn');
+  if (textView) textView.style.display = 'block';
+  if (editArea) editArea.style.display = 'none';
+  if (btn) btn.style.display = '';
+}
+
+/* ═══════════════════════════════════════════
+   语音输入
+   ═══════════════════════════════════════════ */
+
+function toggleVoice() {
+  if (isRecording) { stopRecording(); return; }
+  startRecording();
+}
+
+function startRecording() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('你的浏览器不支持语音识别，请在 Chrome 中打开');
+    return;
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('recordingOverlay').classList.add('active');
+  };
+
+  recognition.onresult = function(e) {
+    var final_text = '', interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final_text += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (final_text) { document.getElementById('userInput').value += final_text; document.getElementById('recText').textContent = final_text; autoResize(document.getElementById('userInput')); }
+    else if (interim) document.getElementById('recText').textContent = interim;
+  };
+
+  recognition.onerror = function(e) { logError('语音识别', 'ASR 错误', e.error || 'unknown'); stopRecording(); };
+  recognition.onend = function() { stopRecording(); };
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('recordingOverlay').classList.remove('active');
+  if (recognition) { try { recognition.stop(); } catch(e) {} }
+}
+
+/* ═══════════════════════════════════════════
+   快捷建议
+   ═══════════════════════════════════════════ */
+
+function useSuggestion(text) {
+  var input = document.getElementById('userInput');
+  input.value = text;
+  autoResize(input);
+  sendMessage();
+}
+
+/* ═══════════════════════════════════════════
+   角色 / 清空 / 抽屉
+   ═══════════════════════════════════════════ */
+
+function savePersona() {
+  S.system = document.getElementById('personaSystem').value.trim() || DEFAULTS.system;
+  S.background = document.getElementById('personaBg').value.trim();
+  saveSettings();
+  showToast('角色设定已保存');
+  closePersona();
+}
+
+function clearChat() {
+  if (!confirm('确定清空聊天记录？\n摘要记忆也会一并清除。')) return;
+  history = []; summary = ''; turnCount = 0;
+  retainedAudios = {};
+  saveHistory();
+  localStorage.removeItem('xinyu_summary');
+  var area = document.getElementById('chatArea');
+  area.innerHTML = '<div class="welcome-msg" id="welcomeMsg"><span class="emoji">\u{1F49C}</span>对话已清空，随时重新开始 \u{1F4AC}</div>' +
+    '<div class="suggestions" id="suggestions">' +
+    QUICK_SUGGESTIONS.map(function(s) { return '<div class="suggest-chip" onclick="useSuggestion(\'' + escapeHtml(s) + '\')">' + s + '</div>'; }).join('') +
+    '</div>';
+  updateTurnCounter();
+  updateMemoryUI();
+}
+
+function resetAll() {
+  if (!confirm('确定重置所有设置和对话？\n此操作不可恢复。')) return;
+  localStorage.removeItem('xinyu_settings');
+  localStorage.removeItem('xinyu_history');
+  localStorage.removeItem('xinyu_summary');
+  location.reload();
+}
+
+function openSettings() { openDrawer('settingsDrawer'); }
+function closeSettings() { closeDrawer('settingsDrawer'); }
+function openMemory() { updateMemoryUI(); openDrawer('memoryDrawer'); }
+function closeMemory() { closeDrawer('memoryDrawer'); }
+function openPersona() {
+  document.getElementById('personaSystem').value = S.system;
+  document.getElementById('personaBg').value = S.background;
+  openDrawer('personaDrawer');
+}
+function closePersona() { closeDrawer('personaDrawer'); }
+function closeErrorLogDrawer() { closeDrawer('errorLogDrawer'); }
+
+/* ═══════════════════════════════════════════
+   导出对话
+   ═══════════════════════════════════════════ */
+
+function openExport() {
+  var msgCount = history.length;
+  var turnCount2 = Math.floor(msgCount / 2);
+  document.getElementById('exportCount').textContent = msgCount;
+  document.getElementById('exportTurns').textContent = turnCount2;
+  document.getElementById('exportMsg').textContent = '';
+  openDrawer('exportDrawer');
+}
+function closeExport() { closeDrawer('exportDrawer'); }
+
+function doExport(fmt) {
+  if (history.length === 0) {
+    document.getElementById('exportMsg').textContent = '没有可导出的对话记录';
+    return;
+  }
+  var withReasoning = document.getElementById('exportWithReasoning').checked;
+  var withSummary = document.getElementById('exportWithSummary').checked;
+  var now = new Date();
+  var dateStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + '_' +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0');
+  var filename = '心语对话_' + dateStr;
+  var content = '';
+
+  if (fmt === 'txt') {
+    content = buildExportTxt(withReasoning, withSummary);
+    triggerDownload(filename + '.txt', content, 'text/plain;charset=utf-8');
+  } else if (fmt === 'md') {
+    content = buildExportMd(withReasoning, withSummary);
+    triggerDownload(filename + '.md', content, 'text/markdown;charset=utf-8');
+  } else if (fmt === 'html') {
+    content = buildExportHtml(withReasoning, withSummary);
+    triggerDownload(filename + '.html', content, 'text/html;charset=utf-8');
+  }
+  document.getElementById('exportMsg').textContent = '✅ 已下载：' + filename + '.' + fmt;
+}
+
+function buildExportTxt(withReasoning, withSummary) {
+  var lines = [];
+  lines.push('============================');
+  lines.push('心语 AI 对话记录');
+  lines.push('导出时间：' + new Date().toLocaleString('zh-CN'));
+  lines.push('============================');
+  if (withSummary && summary) {
+    lines.push('');
+    lines.push('【记忆摘要】');
+    lines.push(summary);
+    lines.push('----------------------------');
+  }
+  for (var i = 0; i < history.length; i++) {
+    var m = history[i];
+    lines.push('');
+    if (m.role === 'user') {
+      lines.push('【我】' + (m.ts ? ' (' + new Date(m.ts).toLocaleString('zh-CN') + ')' : ''));
+    } else {
+      lines.push('【心语 AI】');
+      if (withReasoning && m.reasoning) {
+        lines.push('<思考过程>');
+        lines.push(m.reasoning);
+        lines.push('</思考过程>');
+      }
+    }
+    lines.push(m.content);
+  }
+  lines.push('');
+  lines.push('============================');
+  return lines.join('\n');
+}
+
+function buildExportMd(withReasoning, withSummary) {
+  var lines = [];
+  lines.push('# 心语 AI 对话记录');
+  lines.push('');
+  lines.push('> 导出时间：' + new Date().toLocaleString('zh-CN'));
+  lines.push('');
+  if (withSummary && summary) {
+    lines.push('## 记忆摘要');
+    lines.push('');
+    lines.push('> ' + summary.replace(/\n/g, '\n> '));
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
+  lines.push('## 对话内容');
+  lines.push('');
+  for (var i = 0; i < history.length; i++) {
+    var m = history[i];
+    if (m.role === 'user') {
+      lines.push('### 👤 我' + (m.ts ? ' · ' + formatTime(m.ts) : ''));
+      lines.push('');
+      lines.push(m.content);
+    } else {
+      lines.push('### 🤖 心语 AI');
+      lines.push('');
+      if (withReasoning && m.reasoning) {
+        lines.push('<details>');
+        lines.push('<summary>🧠 思考过程</summary>');
+        lines.push('');
+        lines.push(m.reasoning);
+        lines.push('');
+        lines.push('</details>');
+        lines.push('');
+      }
+      lines.push(m.content);
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function buildExportHtml(withReasoning, withSummary) {
+  var escH = function(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  };
+  var parts = [];
+  parts.push('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">');
+  parts.push('<meta name="viewport" content="width=device-width,initial-scale=1">');
+  parts.push('<title>心语 AI 对话记录</title>');
+  parts.push('<style>');
+  parts.push('body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:720px;margin:0 auto;padding:20px 16px;background:#f7f5ff;color:#333;}');
+  parts.push('h1{color:#7c6ab5;font-size:20px;margin-bottom:4px;}');
+  parts.push('.meta{color:#999;font-size:13px;margin-bottom:20px;}');
+  parts.push('.summary-box{background:#fff;border-left:4px solid #b59fdf;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:13px;color:#555;}');
+  parts.push('.msg{margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;}');
+  parts.push('.msg.user{flex-direction:row-reverse;}');
+  parts.push('.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}');
+  parts.push('.avatar.user{background:#e8e0ff;}.avatar.ai{background:#f0f0f0;}');
+  parts.push('.bubble{max-width:75%;background:#fff;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.7;box-shadow:0 1px 4px rgba(0,0,0,0.08);}');
+  parts.push('.msg.user .bubble{background:#7c6ab5;color:#fff;}');
+  parts.push('.time{font-size:11px;color:#aaa;margin-top:2px;}');
+  parts.push('details{margin-top:8px;border:1px solid #e0d8f0;border-radius:8px;background:#f8f6ff;font-size:12px;}');
+  parts.push('details summary{cursor:pointer;padding:6px 10px;color:#6b5ca5;font-weight:600;}');
+  parts.push('details pre{margin:0;padding:8px 10px;white-space:pre-wrap;word-break:break-word;color:#555;font-family:inherit;max-height:300px;overflow-y:auto;}');
+  parts.push('</style></head><body>');
+  parts.push('<h1>心语 AI 对话记录</h1>');
+  parts.push('<div class="meta">导出时间：' + new Date().toLocaleString('zh-CN') + ' · 共 ' + history.length + ' 条消息</div>');
+  if (withSummary && summary) {
+    parts.push('<div class="summary-box"><strong>📌 记忆摘要</strong><br>' + escH(summary) + '</div>');
+  }
+  for (var i = 0; i < history.length; i++) {
+    var m = history[i];
+    var isUser = m.role === 'user';
+    parts.push('<div class="msg ' + (isUser ? 'user' : 'ai') + '">');
+    parts.push('<div class="avatar ' + (isUser ? 'user' : 'ai') + '">' + (isUser ? '😊' : '🤖') + '</div>');
+    parts.push('<div>');
+    if (!isUser && withReasoning && m.reasoning) {
+      parts.push('<details><summary>🧠 思考过程</summary><pre>' + escH(m.reasoning) + '</pre></details>');
+    }
+    parts.push('<div class="bubble">' + escH(m.content) + '</div>');
+    if (m.ts) parts.push('<div class="time">' + formatTime(m.ts) + '</div>');
+    parts.push('</div></div>');
+  }
+  parts.push('</body></html>');
+  return parts.join('');
+}
+
+function triggerDownload(filename, content, mimeType) {
+  var blob = new Blob(['\ufeff' + content], { type: mimeType });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+}
+
+/* ═══════════════════════════════════════════
+   抽屉管理
+   ═══════════════════════════════════════════ */
+
+function openDrawer(id) {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(id).classList.add('open');
+  applySettings();
+}
+function closeDrawer(id) {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById(id).classList.remove('open');
+}
+function closeDrawersOnOverlay(e) {
+  if (e.target === e.currentTarget) {
+    document.querySelectorAll('.drawer.open').forEach(function(d) { d.classList.remove('open'); });
+    document.getElementById('overlay').classList.remove('open');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   启动
+   ═══════════════════════════════════════════ */
+
+init();
+</script>
+</body>
+</html>

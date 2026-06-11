@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TTS Bridge 诊断</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #1a1a2e; color: #e0e0e0; padding: 12px; font-size: 14px;
+  -webkit-text-size-adjust: 100%;
+}
+h1 { color:#00d4ff; font-size:18px; margin-bottom:8px; }
+.card {
+  background: rgba(255,255,255,0.06); border-radius: 10px;
+  padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.08);
+}
+.row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; }
+.label { color:#888; flex-shrink:0; }
+.value { text-align:right; word-break:break-all; }
+.ok { color:#4ade80; }
+.warn { color:#fbbf24; }
+.err { color:#f87171; }
+.info { color:#60a5fa; }
+.btn {
+  display:inline-block; padding:8px 16px; border-radius:8px; cursor:pointer;
+  border:none; font-size:13px; font-weight:600; margin:3px 3px 3px 0;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.btn:active { transform:scale(0.96); }
+.btn-primary { background:#00d4ff; color:#000; }
+.btn-danger { background:#ef4444; color:#fff; }
+.btn-warn { background:#f59e0b; color:#000; }
+#log {
+  background:rgba(0,0,0,0.4); border-radius:8px; padding:10px;
+  max-height:50vh; overflow-y:auto; font-family:monospace; font-size:12px;
+  line-height:1.6; white-space:pre-wrap; word-break:break-all;
+  margin-top:8px;
+}
+.log-ok { color:#4ade80; }
+.log-err { color:#f87171; }
+.log-info { color:#60a5fa; }
+.log-warn { color:#fbbf24; }
+.badge {
+  display:inline-block; padding:2px 8px; border-radius:4px;
+  font-size:11px; font-weight:bold; vertical-align:middle;
+}
+.badge-ok { background:rgba(74,222,128,0.2); color:#4ade80; }
+.badge-err { background:rgba(248,113,113,0.2); color:#f87171; }
+.badge-warn { background:rgba(251,191,36,0.2); color:#fbbf24; }
+</style>
+</head>
+<body>
+
+<h1>🔧 TTS Bridge 注入诊断</h1>
+
+<div class="card">
+  <div class="row"><span class="label">时间:</span><span class="value info" id="time"></span></div>
+  <div class="row"><span class="label">协议:</span><span class="value" id="proto"></span></div>
+  <div class="row"><span class="label">UA:</span><span class="value" id="ua" style="font-size:11px;"></span></div>
+</div>
+
+<div class="card">
+  <b>环境检测</b><br><br>
+  <div class="row"><span class="label">__nativeTTS__:</span><span class="value" id="ntts">检测中...</span></div>
+  <div class="row"><span class="label">__nativeTTS__.speak:</span><span class="value" id="speakFn">-</span></div>
+  <div class="row"><span class="label">__onTTSEnd:</span><span class="value" id="endCb">-</span></div>
+  <div class="row"><span class="label">__onTTSFileSaved:</span><span class="value" id="savedCb">-</span></div>
+  <div class="row"><span class="label">speechSynthesis:</span><span class="value" id="ssApi">-</span></div>
+</div>
+
+<div class="card">
+  <b>操作按钮</b><br><br>
+  <button class="btn btn-primary" onclick="startPoll()">▶ 开始轮询 __nativeTTS__ (30s)</button>
+  <button class="btn btn-warn" onclick="testTTSProtocol()">🔊 测试 tts://speak</button>
+  <button class="btn btn-danger" onclick="testSaveTTSProtocol()">💾 测试 save-tts://</button>
+  <button class="btn btn-primary" onclick="manualInject()">🔧 模拟注入(测试)</button>
+  <br><br>
+  <button class="btn btn-primary" onclick="testSpeechSynthesisPlay()">🔊 speechSynthesis 播放测试</button>
+  <button class="btn btn-warm" onclick="checkRetainConfig()">⚙️ 检查留存配置</button>
+</div>
+
+<div class="card">
+  <b>诊断日志</b>
+  <div id="log"></div>
+</div>
+
+<script>
+// ── 初始化 ──
+var logEl = document.getElementById('log');
+
+function now() { return new Date().toLocaleTimeString('zh-CN',{hour12:false}); }
+function log(msg, cls) {
+  var line = '[' + now() + '] ' + msg;
+  logEl.innerHTML += '<div class="log-' + (cls||'info') + '">' + escapeHtml(line) + '</div>';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('time').textContent = new Date().toISOString();
+document.getElementById('proto').innerHTML =
+  location.protocol === 'content:'
+    ? '<span class="badge badge-warn">content:// (APK)</span>'
+    : '<span class="badge badge-ok">' + location.protocol + '</span>';
+document.getElementById('ua').textContent = navigator.userAgent;
+
+// ── 环境快照 ──
+function snap() {
+  var ntts = window.__nativeTTS__;
+  var hasNtts = !!ntts;
+  document.getElementById('ntts').innerHTML = hasNtts
+    ? '<span class="ok">object ✓</span> keys=[' + Object.keys(ntts).join(',') + ']'
+    : '<span class="err">undefined ✗</span>';
+  document.getElementById('speakFn').textContent = hasNtts && typeof ntts.speak === 'function'
+    ? 'function ✓' : (hasNtts ? (typeof ntts.speak) : '-');
+  document.getElementById('endCb').textContent = typeof window.__onTTSEnd === 'function' ? 'function ✓' : '-';
+  document.getElementById('savedCb').textContent = typeof window.__onTTSFileSaved === 'function' ? 'function ✓' : '-';
+  document.getElementById('ssApi').innerHTML = typeof speechSynthesis !== 'undefined'
+    ? '<span class="ok">✓ 可用</span>' : '<span class="err">✗ 不可用</span>';
+}
+snap();
+
+// ── 轮询：持续监测 __nativeTTS__ 是否被注入 ──
+var pollTimer = null;
+var pollCount = 0;
+
+function startPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  log('开始轮询 __nativeTTS__（每500ms检查，最多60次/30秒）', 'info');
+  pollCount = 0;
+  var firstFound = false;
+  pollTimer = setInterval(function() {
+    pollCount++;
+    var exists = !!window.__nativeTTS__;
+    snap();
+    if (exists && !firstFound) {
+      firstFound = true;
+      log('★ 第' + pollCount + '次轮询: __nativeTTS__ 出现了！keys=' + JSON.stringify(Object.keys(window.__nativeTTS__)), 'ok');
+      // 继续轮询看是否稳定
+    } else if (!exists && pollCount <= 3) {
+      if (pollCount === 1) log('第' + pollCount + '次: 仍未出现...', 'warn');
+    }
+    if (pollCount >= 60) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      log('轮询结束（30s）— __nativeTTS__ ' + (!!window.__nativeTTS__ ? '已存在' : '始终未出现'), exists ? 'ok' : 'err');
+      // 输出最终状态
+      dumpGlobalState();
+    }
+  }, 500);
+}
+
+// ── 测试 tts:// 协议 ──
+function testTTSProtocol() {
+  log('测试 tts://speak?text=你好，这是桥接测试', 'info');
+  try {
+    var iframe = document.createElement('iframe');
+    iframe.id = 'test_tts_iframe';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    iframe.src = 'tts://speak?text=' + encodeURIComponent('你好，这是桥接测试');
+    log('已发送 tts://speak（通过iframe导航）', 'info');
+    setTimeout(function() {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }, 3000);
+  } catch(e) {
+    log('tts:// 异常: ' + e.message, 'err');
+  }
+
+  // 同时监听回调
+  if (typeof window.__onTTSEnd !== 'function') {
+    log('__onTTSEnd 不存在，注册临时监听器', 'warn');
+    window.__onTTSEnd = function() { log('→ __onTTSEnd 回调触发！说明 TTS 播放完成', 'ok'); };
+  } else {
+    log('__onTTSEnd 已存在（chat.html 已注册）', 'ok');
+  }
+}
+
+// ── 测试 save-tts:// 协议 ──
+function testSaveTTSProtocol() {
+  log('测试 save-tts://synthesize （原生保存）', 'info');
+  
+  // 先检查必要条件
+  if (!window.__nativeTTS__) {
+    log('❌ 前置失败: __nativeTTS__ 不存在', 'err');
+    // 但仍然尝试发送协议URL，看看 Python 端是否能拦截到
+    log('→ 仍尝试直接发送 save-tts:// URL（测试 WebViewClient 是否拦截）', 'warn');
+  }
+
+  // 注册回调（如果不存在）
+  if (typeof window.__onTTSFileSaved !== 'function') {
+    log('注册临时 __onTTSFileSaved 监听器', 'warn');
+    window.__onTTSFileSaved = function(hidx, failed) {
+      log('→ __onTTSFileSaved 回调! hidx=' + hidx + ', failed=' + !!failed, failed ? 'err' : 'ok');
+    };
+  } else {
+    log('__onTTSFileSaved 已存在', 'ok');
+  }
+
+  try {
+    var url = 'save-tts://synthesize' +
+      '?text=' + encodeURIComponent('桥接诊断测试文本') +
+      '&path=/sdcard/xinyu_tts_test' +
+      '&name=' + encodeURIComponent('diagnostic_' + Date.now() + '.wav') +
+      '&hidx=-99';
+
+    var iframe = document.createElement('iframe');
+    iframe.id = 'test_save_iframe';
+    iframe.style.display = 'none';
+    iframe.onload = function() {
+      log('save-tts:// iframe onLoad 触发', 'info');
+    };
+    iframe.onerror = function() {
+      log('save-tts:// iframe onError 触发', 'warn');
+    };
+    document.body.appendChild(iframe);
+
+    log('正在导航到 save-tts:// URL...', 'info');
+    log('  URL: ' + url.substring(0, 100) + '...', 'info');
+    
+    iframe.src = url;
+
+    // 超时检测
+    setTimeout(function() {
+      log('save-tts:// 发送5秒后：检查是否有回调...', 'warn');
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }, 8000);
+  } catch(e) {
+    log('save-tts:// 异常: ' + e.message, 'err');
+  }
+}
+
+// ── 手动模拟注入（验证JS层逻辑是否正确）──
+function manualInject() {
+  log('手动模拟注入 __nativeTTS__', 'warn');
+  window.__nativeTTS__ = {
+    speak: function(text) {
+      log('[手动注入] speak() 被调用! text="' + text.substring(0, 30) + '"', 'ok');
+      // 创建 iframe 发送 tts:// 协议
+      var id = 'manual_tts_iframe';
+      var iframe = document.getElementById(id);
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = id;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+      iframe.src = 'tts://speak?text=' + encodeURIComponent(text);
+    },
+    stop: function() {
+      log('[手动注入] stop() 被调用!', 'ok');
+      var iframe = document.getElementById('manual_tts_iframe');
+      if (iframe) iframe.src = 'tts://stop';
+    }
+  };
+  log('手动注入完成，刷新环境显示', 'ok');
+  snap();
+}
+
+// ── speechSynthesis 直接播放测试 ──
+function testSpeechSynthesisPlay() {
+  if (typeof speechSynthesis === 'undefined') {
+    log('speechSynthesis 不可用！', 'err');
+    return;
+  }
+  log('开始 speechSynthesis 播放测试...', 'info');
+  var utter = new SpeechSynthesisUtterance('你好，这是语音合成播放测试');
+  utter.lang = 'zh-CN';
+  utter.rate = 1.0;
+  utter.onstart = function() { log('speechSynthesis onstart ✓', 'ok'); };
+  utter.onend = function() { log('speechSynthesis onend ✓ (播放完成)', 'ok'); };
+  utter.onerror = function(e) {
+    log('speechSynthesis onerror: ' + (e.error || 'unknown'), 'err');
+  };
+  // 先取消之前的
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter);
+}
+
+// ── 检查留存配置 ──
+function checkRetainConfig() {
+  log('检查 localStorage 配置:', 'info');
+  try {
+    var raw = localStorage.getItem('xinyu_settings');
+    if (!raw) {
+      log('xinyu_settings 不存在（未配置过设置）', 'warn');
+      return;
+    }
+    var S = JSON.parse(raw);
+    log('ttsRetain=' + S.ttsRetain, S.ttsRetain ? 'ok' : 'info');
+    log('retainPath="' + (S.retainPath || '(空)') + '"', S.retainPath ? 'ok' : 'warn');
+    log('ttsMode=' + (S.ttsMode || '(默认)'), 'info');
+    log('apiUrl=' + (S.apiUrl || '(默认)'), 'info');
+  } catch(e) {
+    log('读取配置异常: ' + e.message, 'err');
+  }
+}
+
+// ── 全局状态转储 ──
+function dumpGlobalState() {
+  log('', 'info');
+  log('═══ 全局状态转储 ═══', 'info');
+  log('__nativeTTS__: ' + typeof window.__nativeTTS__, 'info');
+  if (window.__nativeTTS__) {
+    for (var k in window.__nativeTTS__) {
+      log('  .' + k + ': ' + typeof window.__nativeTTS__[k], 'info');
+    }
+  }
+  log('__onTTSEnd: ' + typeof window.__onTTSEnd, 'info');
+  log('__onTTSFileSaved: ' + typeof window.__onTTSFileSaved, 'info');
+  
+  // 检查所有以 __ 开头的全局变量
+  var ownGlobals = [];
+  for (var key in window) {
+    if (key.indexOf('__') === 0 && typeof window[key] !== 'undefined') {
+      ownGlobals.push(key + '=' + typeof window[key]);
+    }
+  }
+  log('__* 全局变量 (' + ownGlobals.length + '个): [' + ownGlobals.join(', ') + ']', 'info');
+}
+
+// ── 页面加载后自动执行 ──
+log('页面加载完成', 'ok');
+log('protocol=' + location.protocol, 'info');
+snap();
+dumpGlobalState();
+log('', 'info');
+log('💡 请点击 "开始轮询" 按钮，然后在 APK 中等待 onPageFinished 注入', 'info');
+log('   如果30秒内 __nativeTTS__ 始终不出现 → 说明Python端注入失败', 'warn');
+
+</script>
+</body>
+</html>
