@@ -22,6 +22,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Python 3.12 (3.13+ removed cgi module needed by Cython)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -33,7 +38,6 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt update -qq
           sudo apt install -y \
-            python3-pip python3-dev python3-setuptools \
             git zip unzip wget curl \
             autoconf automake libtool pkg-config \
             libltdl-dev libffi-dev libssl-dev \

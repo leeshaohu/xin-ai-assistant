@@ -52,7 +52,7 @@ android.ndk = 25b
 
 # (list) Android architectures to build for
 # arm64-v8a = 64-bit (modern devices, smaller APK)
-android.arch = arm64-v8a
+android.archs = arm64-v8a
 
 # (int) Android SDK to compile against
 android.compile_sdk_version = 34
